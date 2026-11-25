@@ -789,14 +789,14 @@
   const bgmEl = new Audio('assets/stream.mp3');
   bgmEl.loop = true;
   bgmEl.preload = 'auto';
-  bgmEl.volume = 0.4;
+  bgmEl.volume = 0.25;
   const homeBgmEl = new Audio('assets/home-bgm.mp3');
   homeBgmEl.loop = true;
   homeBgmEl.preload = 'auto';
   homeBgmEl.volume = 0.4;
   const resultEl = new Audio('assets/result.mp3');
   resultEl.preload = 'auto';
-  resultEl.volume = 0.4;
+  resultEl.volume = 0.3;
   resultEl.addEventListener('ended', () => {
     if (document.body.dataset.screen === 'result' && state.bgm) startBgm();
   });
