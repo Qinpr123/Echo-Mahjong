@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>浮光麻将 · 牌面资产 v1</title>
+<style>
+  :root{
+    --gold:#d6b25e;
+    --gold-soft:#e2c170;
+    --cream:#f3e6c8;
+    --muted:#b9a888;
+    --jade:#1f5a4a;
+    --jade-deep:#143c33;
+    --panel:#1a120d;
+    --red:#d0603c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100vh;min-height:100dvh;color:var(--cream);
+    font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(900px 500px at 50% -10%, rgba(214,178,94,.13), transparent 62%),
+      radial-gradient(800px 500px at 50% 110%, rgba(31,90,74,.28), transparent 60%),
+      linear-gradient(180deg,#160f0b 0%,#0e0907 100%);
+  }
+  .wrap{
+    max-width:980px;margin:0 auto;
+    padding:24px 16px calc(60px + env(safe-area-inset-bottom));
+  }
+  header{border-bottom:1px solid rgba(226,193,112,.18);padding-bottom:18px;margin-bottom:22px;}
+  h1{font-family:"Songti SC","SimSun",serif;font-size:30px;letter-spacing:3px;color:#f0d79a;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:13px;line-height:1.7;}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
+  .chip{
+    border:1px solid rgba(226,193,112,.24);background:rgba(0,0,0,.2);
+    color:#e7d6ad;border-radius:999px;padding:5px 10px;font-size:12px;
+  }
+  .chip b{color:#f0d79a;}
+  section{margin:26px 0 0;}
+  h2{
+    font-family:"Songti SC","SimSun",serif;font-size:18px;letter-spacing:2px;
+    color:#f0d79a;margin:0 0 3px;display:flex;align-items:baseline;gap:9px;
+  }
+  h2 small{font-family:inherit;font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:400;}
+  .rule{height:1px;background:linear-gradient(90deg,rgba(226,193,112,.32),transparent);margin:9px 0 14px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px;}
+  .card{
+    background:rgba(26,18,13,.72);border:1px solid rgba(226,193,112,.14);
+    border-radius:14px;padding:10px 8px 9px;display:flex;flex-direction:column;
+    align-items:center;gap:7px;min-width:0;
+  }
+  .card .name{font-size:12px;color:#e7d6ad;text-align:center;line-height:1.2;}
+  .card .id{font-size:10px;color:#8d7a5b;font-family:ui-monospace,Consolas,monospace;}
+  .download{
+    border:1px solid rgba(226,193,112,.2);background:transparent;color:#a99270;
+    border-radius:7px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit;
+  }
+  .download:hover{color:#f0d79a;border-color:rgba(226,193,112,.5);}
+  .tile{
+    position:relative;width:81px;height:108px;perspective:700px;flex:0 0 auto;
+  }
+  .tile .rim{
+    position:absolute;inset:0;border-radius:11px;
+    background:linear-gradient(135deg,#4a9476 0%,#1f5a4a 58%,#164236 100%);
+    transform:translate(4px,6px);
+  }
+  .tile .edge{
+    position:absolute;inset:0;border-radius:11px;
+    background:linear-gradient(135deg,#1b5245,#0a2822 82%);
+    transform:translate(8px,12px);
+    box-shadow:0 12px 18px rgba(0,0,0,.5);
+  }
+  .tile .face{
+    position:relative;z-index:1;width:100%;height:100%;border-radius:11px;padding:5px 6px;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(circle at 30% 18%, rgba(255,255,255,.95), transparent 42%),
+      repeating-linear-gradient(115deg, rgba(120,90,50,.035) 0 1px, transparent 1px 5px),
+      linear-gradient(155deg,#fffdf6 0%,#f6ecd6 58%,#ead9b7 100%);
+    border:1.5px solid #e3cfa8;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 -3px 0 rgba(190,160,110,.28);
+  }
+  .tile .face::before{
+    content:"";position:absolute;inset:4px;border-radius:8px;
+    border:1px solid rgba(178,134,58,.3);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);
+    pointer-events:none;
+  }
+  .face-art{position:relative;z-index:1;width:100%;height:100%;display:block;}
+  .tile.small{width:56px;height:75px;}
+  .tile.small .rim{border-radius:8px;transform:translate(3px,4px);}
+  .tile.small .edge{border-radius:8px;transform:translate(5px,7px);}
+  .tile.small .face{border-radius:8px;padding:3px 4px;}
+  .tile.small .face::before{inset:3px;border-radius:5px;}
+  .size-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-top:6px;}
+  .size-row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:7px;}
+  .size-row figcaption{font-size:11px;color:var(--muted);}
+  .back-demo .face{background:linear-gradient(145deg,#2b715d,#123a31 72%);border:2px solid #c9a45a;}
+  .back-demo .face::after{
+    content:"";width:26px;height:26px;border:1px solid rgba(226,193,112,.72);
+    border-radius:4px;transform:rotate(45deg);
+  }
+  .note{
+    margin-top:12px;color:var(--muted);font-size:12px;line-height:1.85;
+    background:rgba(0,0,0,.18);border:1px solid rgba(226,193,112,.12);
+    border-radius:12px;padding:12px 14px;
+  }
+  .note b{color:#e7d6ad;}
+  @media(max-width:420px){
+    .wrap{padding:18px 11px 44px;}
+    h1{font-size:25px;}
+    .grid{grid-template-columns:repeat(3,1fr);gap:8px;}
+    .card{padding:8px 5px 7px;}
+    .tile{width:74px;height:74px;}
+    .tile .face{padding:5px;}
+    .tile.small{width:48px;height:48px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>浮光麻将 · 牌面资产 v1</h1>
+    <div class="sub">
+      24 面原创矢量牌 · 3:4 牌型（81×108，小尺寸 56×75）· 100×133 viewBox<br>
+      4 灵兽 / 6 铜钱 / 6 竹节 / 4 风 / 2 龙 / 2 秘宝
+    </div>
+    <div class="chips">
+      <span class="chip"><b>风格</b> 象牙瓷面 · 青绿厚边 · 朱砂/石青/金</span>
+      <span class="chip"><b>识别</b> 形状 + 颜色双编码</span>
+      <span class="chip"><b>版权</b> 原创，不复制 Vita</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>灵兽 <small>ANIMALS · 4</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="animals"></div>
+  </section>
+
+  <section>
+    <h2>铜钱 <small>COINS · 1–6</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="coins"></div>
+  </section>
+
+  <section>
+    <h2>竹节 <small>BAMBOO · 1–6</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="bamboo"></div>
+  </section>
+
+  <section>
+    <h2>风 <small>WINDS · 4</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="winds"></div>
+  </section>
+
+  <section>
+    <h2>龙 <small>DRAGONS · 2</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="dragons"></div>
+  </section>
+
+  <section>
+    <h2>秘宝 <small>SPECIALS · 2</small></h2>
+    <div class="rule"></div>
+    <div class="grid" id="specials"></div>
+  </section>
+
+  <section>
+    <h2>小尺寸检查 <small>L1 实际出现的 8 面 · 81×108 / 56×75</small></h2>
+    <div class="rule"></div>
+    <div class="size-row" id="sizeCheck"></div>
+  </section>
+
+  <section>
+    <h2>牌背 <small>TILE BACK</small></h2>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="tile back-demo"><div class="edge"></div><div class="face"></div></div>
+        <div class="name">牌背</div>
+        <div class="id">tile-back</div>
+      </div>
+    </div>
+    <div class="note">
+      <b>牌面结构：</b>3:4 牌型 81×108（手机竖屏），内描金 1px；右侧 + 底边共 8px 青绿厚度（受光 4px + 背光 4px）+ 12px 投影。<br>
+      <b>可读性：</b>灵兽用轮廓区分，铜钱/竹节用数量区分，风用字 + 方位箭头，秘宝用金色/雾色区分；不只靠颜色。<br>
+      <b>资产：</b>点击每张牌的“SVG”可下载透明底单面；游戏内直接使用 <code>assets/tiles.js</code> 的内联 SVG，避免 24 次请求。
+    </div>
+  </section>
+</div>
+
+<script src="tiles.js"></script>
+<script>
+(() => {
+  'use strict';
+  const T = window.FUANG_TILES || {};
+  const groups = {
+    animals: ['cat', 'dog', 'fish', 'monkey'],
+    coins: ['coin1', 'coin2', 'coin3', 'coin4', 'coin5', 'coin6'],
+    bamboo: ['bamboo1', 'bamboo2', 'bamboo3', 'bamboo4', 'bamboo5', 'bamboo6'],
+    winds: ['east', 'south', 'west', 'north'],
+    dragons: ['zhong', 'fa'],
+    specials: ['gold', 'fog']
+  };
+
+  function tileHtml(id, small) {
+    const t = T[id] || { art: '', label: id };
+    return '<div class="tile' + (small ? ' small' : '') + '">' +
+      '<div class="edge"></div>' +
+      '<div class="rim"></div>' +
+      '<div class="face"><svg class="face-art" viewBox="0 0 100 133.333" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(0 16.667)">' + t.art + '</g></svg></div>' +
+    '</div>';
+  }
+
+  function cardHtml(id) {
+    const t = T[id] || { label: id };
+    return '<div class="card">' +
+      tileHtml(id, false) +
+      '<div class="name">' + t.label + '</div>' +
+      '<div class="id">' + id + '</div>' +
+      '<button class="download" data-id="' + id + '" type="button">SVG</button>' +
+    '</div>';
+  }
+
+  for (const [key, ids] of Object.entries(groups)) {
+    const root = document.getElementById(key);
+    if (!root) continue;
+    root.innerHTML = ids.map(cardHtml).join('');
+  }
+
+  const l1 = ['fish', 'cat', 'dog', 'monkey', 'fa', 'coin1', 'coin2', 'coin3'];
+  const sizeRoot = document.getElementById('sizeCheck');
+  sizeRoot.innerHTML = l1.map(id => {
+    const t = T[id] || { label: id };
+    return '<figure>' +
+      tileHtml(id, false) +
+      '<figcaption>' + t.label + '</figcaption>' +
+    '</figure>';
+  }).join('') + l1.map(id => {
+    const t = T[id] || { label: id };
+    return '<figure>' +
+      tileHtml(id, true) +
+      '<figcaption>' + t.label + ' · 56</figcaption>' +
+    '</figure>';
+  }).join('');
+
+  function downloadSvg(id) {
+    const t = T[id];
+    if (!t) return;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 133.333" width="300" height="400">' +
+      '<g transform="translate(0 16.667)">' + t.art + '</g></svg>';
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fuang-' + id + '.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.download');
+    if (btn) downloadSvg(btn.dataset.id);
+  });
+})();
+</script>
+</body>
+</html>

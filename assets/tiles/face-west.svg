@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 133.333" width="300" height="400">
+  <title>西 · 风</title>
+  <g transform="translate(0 16.666)">
+    <g stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="38" fill="none" stroke="#b8892f" stroke-width="1.4" opacity=".55"/><path d="M13 50 l9 -5 v10 Z" fill="#b23a2f" stroke="none"/><path d="M22 22 l5 5 M78 22 l-5 5 M22 78 l5 -5 M78 78 l-5 -5" fill="none" stroke="#b8892f" stroke-width="1.2" opacity=".55"/><text x="50" y="60" text-anchor="middle" font-family="'Songti SC','Noto Serif SC',STSong,serif" font-size="49" font-weight="700" fill="#2f5d8a">西</text><circle cx="83" cy="50" r="2" fill="#b8892f" stroke="none"/></g>
+  </g>
+</svg>

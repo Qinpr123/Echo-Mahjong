@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 330" width="248" height="330">
+  <title>金叶 · 秘宝</title>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf6"/>
+      <stop offset=".58" stop-color="#f6ecd6"/>
+      <stop offset="1" stop-color="#ead9b7"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a9476"/>
+      <stop offset=".58" stop-color="#1f5a4a"/>
+      <stop offset="1" stop-color="#164236"/>
+    </linearGradient>
+    <clipPath id="faceClip"><rect x="2" y="2" width="236" height="316" rx="26"/></clipPath>
+  </defs>
+  <rect x="8" y="10" width="240" height="320" rx="26" fill="#0a2822"/>
+  <rect x="4" y="6" width="240" height="320" rx="26" fill="url(#rim)"/>
+  <g clip-path="url(#faceClip)">
+    <rect x="2" y="2" width="236" height="316" rx="26" fill="url(#paper)"/>
+    <circle cx="66" cy="44" r="112" fill="#fff" opacity=".22"/>
+  </g>
+  <rect x="2" y="2" width="236" height="316" rx="26" fill="none" stroke="#e3cfa8" stroke-width="3"/>
+  <rect x="12" y="12" width="216" height="296" rx="21" fill="none" stroke="#b8892f" stroke-opacity=".3" stroke-width="1.5"/>
+  <g transform="translate(20 60) scale(2)">
+    <g stroke-linecap="round" stroke-linejoin="round"><path d="M50 12 C66 28 75 47 50 86 C25 47 34 28 50 12 Z" fill="#b8892f" stroke="#7f5a17" stroke-width="2.2"/><path d="M50 18 C61 34 65 49 50 76" fill="none" stroke="#e2c170" stroke-width="2.2"/><path d="M50 35 l-12 -8 M50 47 l14 -10 M50 59 l-12 -8 M50 70 l10 -7" fill="none" stroke="#7f5a17" stroke-width="1.6"/><path d="M50 86 q-4 6 -8 8" fill="none" stroke="#7f5a17" stroke-width="2.2"/><path d="M74 22 l1 5 5 1 -5 1 -1 5 -1 -5 -5 -1 5 -1 Z" fill="#e2c170" stroke="none"/><path d="M25 34 l.8 3.5 3.5 .8 -3.5 .8 -.8 3.5 -.8 -3.5 -3.5 -.8 3.5 -.8 Z" fill="#e2c170" stroke="none"/></g>
+  </g>
+</svg>

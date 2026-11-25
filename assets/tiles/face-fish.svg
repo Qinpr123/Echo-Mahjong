@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 133.333" width="300" height="400">
+  <title>鱼 · 灵兽</title>
+  <g transform="translate(0 16.666)">
+    <g stroke-linecap="round" stroke-linejoin="round"><path d="M22 50 Q38 29 64 38 Q78 43 84 50 Q78 57 64 62 Q38 71 22 50 Z" fill="#d0603c" stroke="#26332e" stroke-width="2.4"/><path d="M20 50 L6 36 Q14 50 6 64 Z" fill="#b23a2f" stroke="#26332e" stroke-width="2.4"/><path d="M44 33 Q48 21 58 28 Q54 38 44 33 Z" fill="#b8892f" stroke="#26332e" stroke-width="2"/><path d="M45 67 Q49 79 59 72 Q55 62 45 67 Z" fill="#b8892f" stroke="#26332e" stroke-width="2"/><circle cx="64" cy="47" r="3.2" fill="#f6edd8" stroke="none"/><circle cx="65" cy="47" r="1.5" fill="#26332e" stroke="none"/><path d="M30 44 q7 6 0 12 M39 40 q7 10 0 20 M48 38 q7 12 0 24" fill="none" stroke="#f6edd8" stroke-width="1.4" opacity=".85"/><path d="M76 50 q4 2 6 0" fill="none" stroke="#26332e" stroke-width="1.6"/><circle cx="27" cy="32" r="3" fill="none" stroke="#2f5d8a" stroke-width="1.4"/><circle cx="19" cy="23" r="2" fill="none" stroke="#2f5d8a" stroke-width="1.4"/></g>
+  </g>
+</svg>

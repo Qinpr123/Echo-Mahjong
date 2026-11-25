@@ -1,0 +1,190 @@
+{
+  "name": "浮光麻将牌面",
+  "version": "1.1",
+  "viewBox": "0 0 100 133.333",
+  "ratio": "3:4",
+  "tileSize": "81x108",
+  "thickness": {
+    "side": "right+bottom",
+    "rim": 4,
+    "edge": 8
+  },
+  "families": [
+    "灵兽",
+    "铜钱",
+    "竹节",
+    "风",
+    "龙",
+    "秘宝"
+  ],
+  "tiles": {
+    "cat": {
+      "label": "猫",
+      "family": "灵兽",
+      "color": "#2f7d5b",
+      "face": "face-cat.svg",
+      "tile": "tile-cat.svg"
+    },
+    "dog": {
+      "label": "犬",
+      "family": "灵兽",
+      "color": "#2f5d8a",
+      "face": "face-dog.svg",
+      "tile": "tile-dog.svg"
+    },
+    "fish": {
+      "label": "鱼",
+      "family": "灵兽",
+      "color": "#d0603c",
+      "face": "face-fish.svg",
+      "tile": "tile-fish.svg"
+    },
+    "monkey": {
+      "label": "猴",
+      "family": "灵兽",
+      "color": "#b23a2f",
+      "face": "face-monkey.svg",
+      "tile": "tile-monkey.svg"
+    },
+    "coin1": {
+      "label": "铜钱一",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin1.svg",
+      "tile": "tile-coin1.svg"
+    },
+    "coin2": {
+      "label": "铜钱二",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin2.svg",
+      "tile": "tile-coin2.svg"
+    },
+    "coin3": {
+      "label": "铜钱三",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin3.svg",
+      "tile": "tile-coin3.svg"
+    },
+    "coin4": {
+      "label": "铜钱四",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin4.svg",
+      "tile": "tile-coin4.svg"
+    },
+    "coin5": {
+      "label": "铜钱五",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin5.svg",
+      "tile": "tile-coin5.svg"
+    },
+    "coin6": {
+      "label": "铜钱六",
+      "family": "铜钱",
+      "color": "#2f7d5b",
+      "face": "face-coin6.svg",
+      "tile": "tile-coin6.svg"
+    },
+    "bamboo1": {
+      "label": "竹节一",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo1.svg",
+      "tile": "tile-bamboo1.svg"
+    },
+    "bamboo2": {
+      "label": "竹节二",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo2.svg",
+      "tile": "tile-bamboo2.svg"
+    },
+    "bamboo3": {
+      "label": "竹节三",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo3.svg",
+      "tile": "tile-bamboo3.svg"
+    },
+    "bamboo4": {
+      "label": "竹节四",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo4.svg",
+      "tile": "tile-bamboo4.svg"
+    },
+    "bamboo5": {
+      "label": "竹节五",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo5.svg",
+      "tile": "tile-bamboo5.svg"
+    },
+    "bamboo6": {
+      "label": "竹节六",
+      "family": "竹节",
+      "color": "#2f7d5b",
+      "face": "face-bamboo6.svg",
+      "tile": "tile-bamboo6.svg"
+    },
+    "east": {
+      "label": "東",
+      "family": "风",
+      "color": "#2f5d8a",
+      "face": "face-east.svg",
+      "tile": "tile-east.svg"
+    },
+    "south": {
+      "label": "南",
+      "family": "风",
+      "color": "#2f5d8a",
+      "face": "face-south.svg",
+      "tile": "tile-south.svg"
+    },
+    "west": {
+      "label": "西",
+      "family": "风",
+      "color": "#2f5d8a",
+      "face": "face-west.svg",
+      "tile": "tile-west.svg"
+    },
+    "north": {
+      "label": "北",
+      "family": "风",
+      "color": "#2f5d8a",
+      "face": "face-north.svg",
+      "tile": "tile-north.svg"
+    },
+    "zhong": {
+      "label": "中",
+      "family": "龙",
+      "color": "#b23a2f",
+      "face": "face-zhong.svg",
+      "tile": "tile-zhong.svg"
+    },
+    "fa": {
+      "label": "發",
+      "family": "龙",
+      "color": "#2f7d5b",
+      "face": "face-fa.svg",
+      "tile": "tile-fa.svg"
+    },
+    "gold": {
+      "label": "金叶",
+      "family": "秘宝",
+      "color": "#b8892f",
+      "face": "face-gold.svg",
+      "tile": "tile-gold.svg"
+    },
+    "fog": {
+      "label": "迷雾",
+      "family": "秘宝",
+      "color": "#2f7d5b",
+      "face": "face-fog.svg",
+      "tile": "tile-fog.svg"
+    }
+  }
+}

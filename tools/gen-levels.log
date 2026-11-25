@@ -1,0 +1,19 @@
+L3 茶室·叠影 tiles=12 pairs=6 layers=2 free=8 freeGroups=3 bothFree=3 cross=0.33 target=0.20 adj=0 seed=2 randomWin=99.8% evGames=12.8% avgEv=0.21 noMove=0
+L4 茶室·记性 tiles=14 pairs=7 layers=2 free=8 freeGroups=2 bothFree=2 cross=0.29 target=0.30 adj=0 seed=98 randomWin=89.3% evGames=61.5% avgEv=2.1 noMove=0
+L5 茶室·翻牌 tiles=16 pairs=8 layers=2 free=10 freeGroups=3 bothFree=3 cross=0.25 target=0.25 adj=0 seed=53 randomWin=72.8% evGames=87.5% avgEv=5.16 noMove=0
+L6 庭院·连击 tiles=18 pairs=9 layers=2 free=8 freeGroups=1 bothFree=1 cross=0.22 target=0.30 adj=0 seed=10 randomWin=63.2% evGames=83.3% avgEv=5.11 noMove=0
+L7 庭院·金叶 tiles=20 pairs=10 layers=2 free=6 freeGroups=1 bothFree=1 cross=0.40 target=0.35 adj=0 seed=56 randomWin=58.3% evGames=91.5% avgEv=5.4 noMove=0
+L8 庭院·回声 tiles=22 pairs=11 layers=2 free=10 freeGroups=3 bothFree=3 cross=0.36 target=0.25 adj=0 seed=36 randomWin=50.1% evGames=94.1% avgEv=7.17 noMove=0
+L9 庭院·双塔 tiles=24 pairs=12 layers=3 free=11 freeGroups=3 bothFree=3 cross=0.42 target=0.30 adj=0 seed=71 randomWin=47.2% evGames=96% avgEv=8.94 noMove=0
+L10 庭院·交错 tiles=26 pairs=13 layers=3 free=12 freeGroups=3 bothFree=3 cross=0.31 target=0.20 adj=0 seed=93 randomWin=39% evGames=98.3% avgEv=11.06 noMove=0
+L11 灯会·迷雾 tiles=28 pairs=14 layers=3 free=13 freeGroups=3 bothFree=3 cross=0.36 target=0.25 adj=0 seed=82 randomWin=24.7% evGames=99.3% avgEv=15.42 noMove=0
+L12 灯会·窄门 tiles=30 pairs=15 layers=3 free=14 freeGroups=4 bothFree=4 cross=0.40 target=0.30 adj=0 seed=158 randomWin=36.6% evGames=99.2% avgEv=14.02 noMove=0
+L13 灯会·灯海 tiles=32 pairs=16 layers=3 free=13 freeGroups=4 bothFree=4 cross=0.25 target=0.20 adj=0 seed=43 randomWin=28.3% evGames=99.7% avgEv=16.38 noMove=0
+L14 灯会·流光 tiles=34 pairs=17 layers=3 free=14 freeGroups=3 bothFree=3 cross=0.35 target=0.25 adj=0 seed=42 randomWin=15.8% evGames=100% avgEv=21.4 noMove=0
+L15 灯会·金雨 tiles=36 pairs=18 layers=3 free=16 freeGroups=4 bothFree=4 cross=0.33 target=0.30 adj=0 seed=8 randomWin=9% evGames=100% avgEv=26.86 noMove=0
+L16 山河·层峦 tiles=40 pairs=20 layers=3 free=18 freeGroups=4 bothFree=4 cross=0.45 target=0.35 adj=0 seed=122 randomWin=2.3% evGames=100% avgEv=34.34 noMove=0
+L17 山河·回廊 tiles=44 pairs=22 layers=3 free=16 freeGroups=3 bothFree=3 cross=0.36 target=0.30 adj=0 seed=98 randomWin=1.4% evGames=100% avgEv=39.27 noMove=0
+L18 山河·一线 tiles=48 pairs=24 layers=4 free=18 freeGroups=3 bothFree=3 cross=0.38 target=0.35 adj=0 seed=156 randomWin=0.3% evGames=100% avgEv=46.53 noMove=0
+L19 山河·问心 tiles=46 pairs=23 layers=4 free=15 freeGroups=3 bothFree=3 cross=0.48 target=0.40 adj=0 seed=71 randomWin=8.3% evGames=100% avgEv=40.3 noMove=0
+L20 山河·浮光 tiles=48 pairs=24 layers=4 free=15 freeGroups=2 bothFree=2 cross=0.58 target=0.45 adj=0 seed=136 randomWin=2.3% evGames=100% avgEv=51.45 noMove=0
+wrote D:\学习资料\研二\比赛\AI游戏\麻将游戏\demo\assets\levels.js 61.9KB

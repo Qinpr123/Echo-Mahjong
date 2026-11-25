@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 133.333" width="300" height="400">
+  <title>發 · 龙</title>
+  <g transform="translate(0 16.666)">
+    <g stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="37" fill="none" stroke="#b8892f" stroke-width="1.8" opacity=".6"/><path d="M50 9 l4 10 h-8 Z" fill="#b8892f" stroke="none"/><text x="50" y="62" text-anchor="middle" font-family="'Songti SC','Noto Serif SC',STSong,serif" font-size="49" font-weight="700" fill="#2f7d5b">發</text><path d="M25 81 q12 -7 25 0 q13 7 25 0" fill="none" stroke="#b8892f" stroke-width="2"/></g>
+  </g>
+</svg>

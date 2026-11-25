@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 133.333" width="300" height="400">
+  <title>金叶 · 秘宝</title>
+  <g transform="translate(0 16.666)">
+    <g stroke-linecap="round" stroke-linejoin="round"><path d="M50 12 C66 28 75 47 50 86 C25 47 34 28 50 12 Z" fill="#b8892f" stroke="#7f5a17" stroke-width="2.2"/><path d="M50 18 C61 34 65 49 50 76" fill="none" stroke="#e2c170" stroke-width="2.2"/><path d="M50 35 l-12 -8 M50 47 l14 -10 M50 59 l-12 -8 M50 70 l10 -7" fill="none" stroke="#7f5a17" stroke-width="1.6"/><path d="M50 86 q-4 6 -8 8" fill="none" stroke="#7f5a17" stroke-width="2.2"/><path d="M74 22 l1 5 5 1 -5 1 -1 5 -1 -5 -5 -1 5 -1 Z" fill="#e2c170" stroke="none"/><path d="M25 34 l.8 3.5 3.5 .8 -3.5 .8 -.8 3.5 -.8 -3.5 -3.5 -.8 3.5 -.8 Z" fill="#e2c170" stroke="none"/></g>
+  </g>
+</svg>

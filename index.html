@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>浮光麻将</title>
+<style>
+  :root{
+    --gold:#d6b25e;
+    --gold-soft:#e2c170;
+    --cream:#f3e6c8;
+    --muted:#b9a888;
+    --jade:#1f5a4a;
+    --jade-deep:#143c33;
+    --panel:#1a120d;
+    --red:#d0603c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    min-height:100dvh;
+    overflow-x:hidden;
+    color:var(--cream);
+    font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(214,178,94,.12), transparent 60%),
+      radial-gradient(900px 500px at 50% 110%, rgba(31,90,74,.25), transparent 60%),
+      linear-gradient(180deg,#160f0b 0%,#0e0907 100%);
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    user-select:none;
+    touch-action:manipulation;
+  }
+  .app{
+    max-width:760px;margin:0 auto;
+    min-height:100vh;min-height:100dvh;
+    display:flex;flex-direction:column;
+    padding:14px 14px calc(26px + env(safe-area-inset-bottom));
+  }
+
+  @keyframes lowPulse{50%{opacity:.45;}}
+  @keyframes pipWarn{50%{opacity:.35;}}
+
+  /* ---------- Stage ---------- */
+  .stage{margin-top:14px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+  .board-viewport{width:100%;display:flex;justify-content:center;}
+  .board-wrap{position:relative;width:420px;height:420px;transform-origin:top left;}
+  .board{
+    position:relative;width:420px;height:420px;border-radius:24px;
+    background:
+      radial-gradient(circle at 50% 38%, rgba(226,193,112,.08), transparent 55%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 9px),
+      linear-gradient(160deg,#123a30,#0c2822 70%);
+    border:1px solid rgba(226,193,112,.18);
+    box-shadow:inset 0 0 48px rgba(0,0,0,.55),0 18px 40px rgba(0,0,0,.35);
+  }
+
+  .fx-canvas{position:absolute;left:0;top:0;width:420px;height:420px;z-index:1200;pointer-events:none;}
+  .tile.flying{z-index:1100 !important;}
+
+  .tile{
+    position:absolute;width:81px;height:108px;
+    perspective:700px;cursor:pointer;
+    transition:transform .14s cubic-bezier(.2,.8,.2,1),filter .2s ease;
+    will-change:transform;
+  }
+  /* 厚度：rim 是受光侧面，edge 是背光底沿；只出现在右边与底边 */
+  .tile .rim{
+    position:absolute;inset:0;border-radius:11px;
+    background:linear-gradient(135deg,#4a9476 0%,#1f5a4a 58%,#164236 100%);
+    transform:translate(4px,6px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+    pointer-events:none;
+  }
+  .tile .edge{
+    position:absolute;inset:0;border-radius:11px;
+    background:linear-gradient(135deg,#1b5245,#0a2822 82%);
+    transform:translate(8px,12px);
+    box-shadow:0 12px 18px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+  .tile .inner{
+    position:relative;width:100%;height:100%;z-index:2;
+    transform-style:preserve-3d;
+    transition:transform .18s cubic-bezier(.2,.8,.2,1);
+  }
+  .tile.up .inner,.tile.reveal .inner{transform:rotateY(180deg);}
+  .tile .back,.tile .face{
+    position:absolute;inset:0;border-radius:11px;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .tile .back{
+    background:
+      radial-gradient(circle at 50% 48%, rgba(226,193,112,.18) 0 9%, transparent 10%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 2px, transparent 2px 9px),
+      linear-gradient(145deg,#2b715d,#123a31 72%);
+    border:2px solid #c9a45a;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.16),inset 0 0 0 4px rgba(10,38,31,.28);
+  }
+  .tile .back::after{
+    content:"";width:30px;height:30px;
+    border:1px solid rgba(226,193,112,.72);border-radius:4px;
+    transform:rotate(45deg);
+  }
+  .tile .face{
+    transform:rotateY(180deg);
+    padding:5px 6px;
+    background:
+      radial-gradient(circle at 30% 18%, rgba(255,255,255,.95), transparent 42%),
+      repeating-linear-gradient(115deg, rgba(120,90,50,.035) 0 1px, transparent 1px 5px),
+      linear-gradient(155deg,#fffdf6 0%,#f6ecd6 58%,#ead9b7 100%);
+    border:1.5px solid #e3cfa8;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 -3px 0 rgba(190,160,110,.28);
+  }
+  .tile .face::before{
+    content:"";position:absolute;inset:4px;border-radius:8px;
+    border:1px solid rgba(178,134,58,.3);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);
+    pointer-events:none;
+  }
+  .face-art{position:relative;z-index:1;width:100%;height:100%;display:block;}
+  .face-text{
+    position:relative;z-index:1;
+    font-family:"Songti SC","SimSun",serif;
+    font-size:32px;font-weight:800;letter-spacing:1px;
+    text-shadow:0 1px 0 rgba(255,255,255,.85);
+  }
+  .tile.free{transform:translateY(-4px);}
+  .tile.free::after{
+    content:"";position:absolute;inset:-3px;border-radius:14px;
+    border:2px solid rgba(226,193,112,.62);
+    box-shadow:0 0 9px rgba(226,193,112,.24);
+    pointer-events:none;
+  }
+  .tile.blocked{filter:brightness(.6) saturate(.72);transform:translateY(2px);}
+  .tile.clamped{filter:brightness(.8) saturate(.88);}
+  .tile.ghost{filter:none !important;}
+  .tile.ghost .face{
+    transform:rotateY(0deg);z-index:2;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),inset 0 -3px 0 rgba(190,160,110,.28),0 0 22px rgba(255,226,150,.5);
+    animation:ghostFace var(--peek,460ms) cubic-bezier(.2,.7,.3,1) var(--delay,0ms) both;
+  }
+  @keyframes ghostFace{
+    0%{opacity:0;}
+    15%{opacity:1;}
+    78%{opacity:1;}
+    100%{opacity:0;}
+  }
+  .tile.ghost .inner::after{
+    content:"";position:absolute;inset:0;border-radius:11px;z-index:6;
+    background:linear-gradient(155deg,rgba(3,14,11,.3) 0%,rgba(2,10,8,.46) 100%);
+    box-shadow:inset 0 0 0 1px rgba(255,236,180,.32);
+    pointer-events:none;
+    animation:ghostScrim var(--peek,460ms) ease-out var(--delay,0ms) both;
+  }
+  @keyframes ghostScrim{
+    0%{opacity:0;}
+    15%{opacity:1;}
+    78%{opacity:1;}
+    100%{opacity:0;}
+  }
+  .tile.ghost .face::after{
+    content:"";position:absolute;inset:0;border-radius:9px;z-index:2;
+    pointer-events:none;mix-blend-mode:screen;
+    background:
+      linear-gradient(112deg,rgba(255,255,255,0) 32%,rgba(255,226,150,.55) 42%,rgba(255,252,235,.95) 50%,rgba(255,226,150,.55) 58%,rgba(255,255,255,0) 68%);
+    background-size:280% 100%;background-position:140% 0;
+    animation:ghostSheen var(--peek,460ms) cubic-bezier(.25,.7,.3,1) var(--delay,0ms) both;
+  }
+  @keyframes ghostSheen{
+    0%{background-position:140% 0;opacity:0;}
+    14%{opacity:.95;}
+    60%{opacity:.5;}
+    100%{background-position:-40% 0;opacity:0;}
+  }
+  .tile.ghost::after{
+    content:"";position:absolute;inset:-3px;border-radius:15px;
+    border:1px solid rgba(255,236,180,.85);
+    box-shadow:0 0 14px rgba(255,226,150,.45);
+    pointer-events:none;
+    animation:ghostEdge var(--peek,460ms) ease-out var(--delay,0ms) both;
+  }
+  @keyframes ghostEdge{
+    0%{opacity:0;}18%{opacity:1;}64%{opacity:.9;}100%{opacity:0;}
+  }
+  .ghost-ring{position:absolute;inset:-3px;border-radius:15px;pointer-events:none;opacity:0;z-index:3;}
+  .tile.ghost .ghost-ring{
+    border:1px solid rgba(255,236,180,.9);
+    box-shadow:0 0 20px 4px rgba(255,224,150,.38),inset 0 0 16px rgba(255,236,180,.28);
+    animation:ghostHalo var(--peek,460ms) ease-out var(--delay,0ms) both;
+  }
+  .ghost-ring::before,.ghost-ring::after{
+    content:"";position:absolute;width:4px;height:4px;border-radius:50%;
+    background:#fff4c9;box-shadow:0 0 8px 2px rgba(255,226,150,.85);
+    opacity:0;
+  }
+  .ghost-ring::before{left:12%;top:16%;animation:ghostMote var(--peek,460ms) ease-out var(--delay,0ms) both;}
+  .ghost-ring::after{right:12%;bottom:18%;animation:ghostMote var(--peek,460ms) .08s ease-out var(--delay,0ms) both;}
+  @keyframes ghostHalo{
+    0%{transform:scale(.94);opacity:0;}
+    18%{opacity:1;}
+    100%{transform:scale(1.1);opacity:0;}
+  }
+  @keyframes ghostMote{
+    0%{opacity:0;transform:translateY(5px) scale(.35);}
+    22%{opacity:1;}
+    100%{opacity:0;transform:translateY(-18px) scale(1);}
+  }
+  .tile.pending::after{
+    content:"";position:absolute;inset:-4px;border-radius:16px;
+    border:3px solid #ffe6a6;box-shadow:0 0 16px rgba(255,230,166,.65);
+    pointer-events:none;
+  }
+  .tile.matched{pointer-events:none;}
+  .tile.evict-warn{animation:warnPulse .6s ease-in-out;}
+  @keyframes warnPulse{0%,100%{filter:none;}50%{filter:drop-shadow(0 0 14px rgba(220,80,60,.95)) brightness(1.2);}}
+  .tile.hint .inner{transform:rotateY(180deg);}
+  .tile.hint::after{
+    content:"";position:absolute;inset:-3px;border-radius:15px;
+    border:2px solid rgba(102,194,255,.9);box-shadow:0 0 14px rgba(102,194,255,.5);
+    pointer-events:none;
+  }
+  .tile.shake{animation:shake .26s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}50%{transform:translateX(4px);}75%{transform:translateX(-2px);}}
+  .tile.pulse{animation:pulse .22s;}
+  @keyframes pulse{50%{filter:brightness(1.3);}}
+  .coach-ring{position:absolute;inset:-8px;border-radius:20px;pointer-events:none;opacity:0;}
+  .tile.coach .coach-ring{
+    opacity:1;border:2px solid rgba(255,230,166,.9);
+    animation:coachPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes coachPulse{0%,100%{transform:scale(.96);opacity:.3;}50%{transform:scale(1.06);opacity:1;}}
+  .tile.coach-reveal .inner{transform:rotateY(180deg);}
+  .tile.coach::before{
+    content:"";position:absolute;left:50%;top:52%;width:16px;height:16px;margin:-8px 0 0 -8px;
+    border-radius:50%;background:rgba(255,244,210,.95);
+    box-shadow:0 0 0 8px rgba(255,230,166,.12),0 0 18px rgba(255,230,166,.55);
+    animation:coachTap 1.2s ease-in-out infinite;pointer-events:none;z-index:20;
+  }
+  @keyframes coachTap{0%,100%{opacity:0;transform:scale(.55);}28%{opacity:1;}55%{opacity:0;transform:scale(1.35);}}
+  .coach-tip{
+    position:fixed;left:0;top:0;z-index:80;width:max-content;max-width:min(272px,78vw);
+    padding:9px 14px;border-radius:16px;white-space:normal;
+    background:rgba(9,28,22,.95);border:1px solid rgba(246,217,143,.58);
+    box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 20px rgba(246,208,120,.16);
+    color:#f8e7b9;font-size:13px;line-height:1.35;letter-spacing:.04em;text-align:center;
+    opacity:0;visibility:hidden;transform:translate(-50%,6px);
+    transition:opacity .2s ease,transform .2s ease;pointer-events:none;
+  }
+  .stat.coach-stat{position:relative;}
+  .stat.coach-stat::after{
+    content:"";position:absolute;inset:-7px -10px;border-radius:12px;
+    border:1px solid rgba(255,230,166,.9);box-shadow:0 0 16px rgba(246,208,120,.35);
+    animation:coachPulse 1.2s ease-in-out infinite;pointer-events:none;
+  }
+  .coach-tip.show{opacity:1;visibility:visible;transform:translate(-50%,0);}
+  .screen:not(.is-active) .coach-tip{display:none;}
+  .coach-tip::after{content:"";position:absolute;left:50%;margin-left:-6px;border:6px solid transparent;}
+  .coach-tip[data-side="top"]::after{bottom:-12px;border-top-color:rgba(246,217,143,.58);}
+  .coach-tip[data-side="bottom"]::after{top:-12px;border-bottom-color:rgba(246,217,143,.58);}
+
+  .hint-line{margin-top:10px;font-size:12px;color:var(--muted);text-align:center;min-height:18px;line-height:1.5;}
+  .combo-flash{
+    position:fixed;left:50%;top:15vh;z-index:70;pointer-events:none;
+    font-size:26px;font-weight:800;letter-spacing:.07em;white-space:nowrap;
+    color:#ffe6a6;opacity:0;transform:translate(-50%,10px) scale(.9);
+    text-shadow:0 2px 8px rgba(0,0,0,.62),0 0 18px rgba(255,226,150,.55);
+  }
+  .combo-flash.show{animation:comboPop .86s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes comboPop{
+    0%{opacity:0;transform:translate(-50%,12px) scale(.8);}
+    18%{opacity:1;transform:translate(-50%,0) scale(1.04);}
+    72%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-20px) scale(1);}
+  }
+
+  /* ---------- Actions ---------- */
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+  .booster{
+    background:linear-gradient(180deg,#3a2a1d,#241a12);
+    border:1px solid rgba(226,193,112,.3);
+    color:#f0d79a;border-radius:14px;padding:10px 16px;font-size:14px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .booster:active{transform:translateY(1px);}
+  .booster:disabled{opacity:.38;cursor:not-allowed;}
+  .booster .chip{
+    min-width:20px;height:20px;border-radius:999px;background:rgba(0,0,0,.35);
+    border:1px solid rgba(226,193,112,.25);font-size:11px;
+    display:inline-flex;align-items:center;justify-content:center;padding:0 5px;
+  }
+  .booster.ghost-btn{background:transparent;border-color:rgba(226,193,112,.18);color:var(--muted);}
+
+  /* ---------- Overlay ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:100;padding:20px;
+    background:rgba(8,6,4,.74);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .overlay.hidden{display:none;}
+  .panel{
+    width:min(420px,100%);
+    background:linear-gradient(180deg,#2a1d14,#1a120d);
+    border:1px solid rgba(226,193,112,.4);
+    border-radius:22px;padding:22px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    text-align:center;
+  }
+  .panel-title{font-family:"Songti SC","SimSun",serif;font-size:30px;color:#f0d79a;letter-spacing:3px;}
+  .panel-sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.5;}
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0;text-align:left;}
+  .result-grid .item{
+    background:rgba(0,0,0,.22);border:1px solid rgba(226,193,112,.14);
+    border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted);
+  }
+  .result-grid .item b{display:block;color:var(--cream);font-size:18px;margin-top:2px;}
+  .rules-list{
+    grid-column:1/-1;margin:8px 0;padding-left:18px;
+    text-align:left;color:#d8c6a2;font-size:13px;line-height:1.75;
+  }
+  .rules-list li{margin-bottom:4px;}
+  .rules-list b{color:#f0d79a;}
+  .panel-actions{display:flex;flex-direction:column;gap:8px;}
+  .panel-actions button{
+    border:0;border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer;
+    font-family:inherit;
+  }
+  .panel-actions button:active{transform:translateY(1px);}
+  .panel-actions .primary{background:linear-gradient(180deg,#e0bf6d,#c79b3f);color:#2a1b0c;font-weight:800;}
+  .panel-actions .secondary{background:rgba(0,0,0,.25);color:#f0d79a;border:1px solid rgba(226,193,112,.35);}
+
+  /* ---------- Ad ---------- */
+  .ad-modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .ad-modal.hidden{display:none;}
+  .ad-box{
+    width:min(340px,100%);background:#1a120d;border:1px solid rgba(226,193,112,.4);
+    border-radius:18px;padding:24px;text-align:center;color:#f0d79a;
+  }
+  .ad-box .ad-title{font-family:"Songti SC","SimSun",serif;font-size:22px;letter-spacing:2px;}
+  .ad-box .ad-text{color:var(--muted);font-size:13px;margin-top:10px;line-height:1.6;}
+
+</style>
+<link rel="stylesheet" href="assets/ui/screens.css?v=11">
+</head>
+<body>
+<svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13L7.2 14.5H4z"/><path d="M15.4 9.2a4.2 4.2 0 0 1 0 5.6"/><path d="M18 6.7a7.6 7.6 0 0 1 0 10.6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 10.8v5"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5"/><path d="M6.5 10.5V19h11v-8.5"/><path d="M10 19v-4.5h4V19"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M9 6.2l9 5.8-9 5.8z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4.8v4.7h4.7"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" rx=".6"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3.5c1.8 3.3 5.1 4.7 5.1 8.4A5.1 5.1 0 0 1 12 17a5.1 5.1 0 0 1-5.1-5.1c0-2 1-3.3 2.3-4.5.1 1.6.8 2.4 1.7 2.7C10.4 7.8 10.7 5.7 12 3.5z"/><path d="M12 17c-1 1.2-1 2.4 0 3.6"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.8l1.9 5.6L19.5 10l-5.6 1.6L12 17.2l-1.9-5.6L4.5 10l5.6-1.6z"/><path d="M18.4 16.8l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-hint" viewBox="0 0 24 24"><path d="M9.2 16.6h5.6"/><path d="M10.1 19.4h3.8"/><path d="M12 3.6a5.5 5.5 0 0 0-3.2 9.9c.7.5 1.1 1.2 1.1 2h4.2c0-.8.4-1.5 1.1-2A5.5 5.5 0 0 0 12 3.6z"/><path d="M12 1.8v.8M6.2 4.4l.6.6M17.8 4.4l-.6.6"/></symbol>
+    <symbol id="i-echo" viewBox="0 0 24 24"><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1.2" transform="rotate(45 12 12)"/><circle cx="12" cy="12" r="5.1"/><circle cx="12" cy="12" r="8.7" stroke-dasharray="2.4 3.4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.4v7.2M8.4 12h7.2"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9.4" width="16" height="4" rx="1"/><path d="M5.6 13.4v6h12.8v-6"/><path d="M12 9.4v10"/><path d="M12 9.4c-1.2-2.8-2.4-4-4-3.4-1.5.5-1.4 2.4.4 3.4M12 9.4c1.2-2.8 2.4-4 4-3.4 1.5.5 1.4 2.4-.4 3.4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.5"/><path d="M5.3 19.3c.6-3.5 3.2-5.3 6.7-5.3s6.1 1.8 6.7 5.3"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3.5 12S6.7 6.5 12 6.5 20.5 12 20.5 12 17.3 17.5 12 17.5 3.5 12 3.5 12z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9"/></symbol>
+    <symbol id="i-ad" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.4l4.6 2.6L10 14.6z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-slot" viewBox="0 0 24 24"><rect x="6.6" y="6.6" width="10.8" height="10.8" rx="1.6" transform="rotate(45 12 12)"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 17.2V6.4l9-2v10.4"/><circle cx="7" cy="17.4" r="2.2"/><circle cx="16" cy="15.8" r="2.2"/></symbol>
+    <symbol id="i-vibrate" viewBox="0 0 24 24"><rect x="8.2" y="4.2" width="7.6" height="15.6" rx="2"/><path d="M4.3 9.2v5.6M19.7 9.2v5.6"/></symbol>
+  </defs>
+</svg>
+
+<section class="screen home-screen is-active" id="homeScreen">
+  <div class="bg"></div>
+  <div class="veil"></div>
+  <div class="motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="home-safe">
+    <header class="home-top">
+      <button class="round-btn avatar" id="avatarBtn" type="button" aria-label="玩家头像">
+        <svg class="i"><use href="#i-user"/></svg>
+      </button>
+      <button class="round-btn small" id="homeMenuBtn" type="button" aria-label="菜单">
+        <svg class="i"><use href="#i-menu"/></svg>
+      </button>
+    </header>
+    <div class="home-center">
+      <div class="crest">
+        <span class="crest-pip p1"></span><span class="crest-pip p2"></span>
+        <span class="crest-pip p3"></span><span class="crest-pip p4"></span>
+        <span class="crest-glyph">光</span>
+      </div>
+      <h1 class="home-title">ECHO MAHJONG</h1>
+      <div class="home-sub">浮光麻将</div>
+    </div>
+    <div class="home-bottom">
+      <button class="cta start" id="startBtn" type="button">
+        <span class="cta-icon"><svg class="i"><use href="#i-play"/></svg></span>
+        <span class="cta-label" id="startLabel">关卡 1</span>
+      </button>
+      <button class="level-pick-link" id="levelPickBtn" type="button">选关 · 测试</button>
+    </div>
+  </div>
+</section>
+
+<!-- TODO(demo): remove this level picker before release -->
+<div class="level-picker" id="levelPicker" hidden>
+  <div class="lp-card" role="dialog" aria-modal="true" aria-label="选关测试面板">
+    <div class="lp-head">
+      <b>选关 · 测试</b>
+      <span>正式版移除</span>
+      <button class="lp-close" id="lpClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="lp-grid" id="lpGrid"></div>
+  </div>
+</div>
+
+<section class="screen game-screen" id="gameScreen">
+  <div class="bg"></div>
+  <div class="veil"></div>
+  <div class="game-shell">
+    <header class="playbar">
+      <button class="round-btn small" id="homeBtn" type="button" aria-label="返回首页">
+        <svg class="i"><use href="#i-home"/></svg>
+      </button>
+      <div class="statbar">
+        <div class="stat steps" id="stepsStat"><span class="stat-label">步数</span><b id="steps">20</b></div>
+        <div class="stat"><span class="stat-label">分数</span><span class="stat-value" id="score">0</span></div>
+        <div class="stat memory" aria-label="明牌上限"><span class="stat-label">明牌</span><span class="pips" id="pips"></span></div>
+      </div>
+      <button class="round-btn small" id="menuBtn" type="button" aria-label="菜单">
+        <svg class="i"><use href="#i-menu"/></svg>
+      </button>
+    </header>
+    <div class="combo-flash" id="comboFlash" aria-hidden="true"></div>
+    <main class="stage">
+      <div class="board-viewport" id="boardViewport">
+        <div class="board-wrap" id="boardWrap">
+          <div class="board" id="board" aria-label="牌阵"></div>
+          <canvas class="fx-canvas" id="fx" aria-hidden="true"></canvas>
+        </div>
+      </div>
+      <div class="hint-line" id="hintLine"></div>
+    </main>
+    <footer class="boost-row">
+      <button class="boost" id="hintBtn" type="button" aria-label="提示">
+        <span class="boost-face"><svg class="i"><use href="#i-hint"/></svg><span class="chip" id="hintCount">1</span></span>
+        <span class="boost-label">提示</span>
+      </button>
+      <button class="boost" id="echoBtn" type="button" aria-label="透视">
+        <span class="boost-face"><svg class="i"><use href="#i-echo"/></svg><span class="chip" id="echoCount">1</span></span>
+        <span class="boost-label">透视</span>
+      </button>
+      <button class="boost" id="slotBoostBtn" type="button" aria-label="增加明牌位">
+        <span class="boost-face"><svg class="i"><use href="#i-plus"/></svg><span class="chip" id="slotBoostCount">1</span></span>
+        <span class="boost-label">扩位</span>
+      </button>
+    </footer>
+    <div class="coach-tip" id="coachTip" role="status" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="screen result-screen" id="resultScreen">
+  <div class="bg"></div>
+  <div class="veil"></div>
+  <div class="result-safe">
+    <header class="result-top">
+      <button class="round-btn small" id="resultHomeBtn" type="button" aria-label="返回首页">
+        <svg class="i"><use href="#i-home"/></svg>
+      </button>
+      <button class="round-btn small" id="resultMenuBtn" type="button" aria-label="菜单">
+        <svg class="i"><use href="#i-menu"/></svg>
+      </button>
+    </header>
+    <div class="result-main">
+      <h2 class="result-title" id="resultTitle">通关</h2>
+      <div class="result-sub" id="resultSub"></div>
+      <div class="result-rank" id="resultRank"></div>
+      <div class="result-stats" id="resultStats"></div>
+      <div class="result-bonus" id="resultBonus"></div>
+    </div>
+    <div class="result-goal" id="resultGoal">
+      <div class="goal-segs" id="goalSegs"></div>
+      <div class="goal-note">
+        <svg class="i goal-gift"><use href="#i-gift"/></svg>
+        <span id="goalText">达到第 10 关 · 明牌位 +1</span>
+      </div>
+    </div>
+    <div class="result-actions" id="resultActions"></div>
+  </div>
+</section>
+
+<div class="sheet hidden" id="overlay">
+  <div class="sheet-card">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <span class="sheet-ico"><svg class="i"><use href="#i-info"/></svg></span>
+      <div class="sheet-title">规则</div>
+      <button class="sheet-close" id="sheetClose" type="button" aria-label="关闭">
+        <svg class="i"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <div class="rule-steps">
+      <div class="rule-step">
+        <div class="rule-art art-flip">
+          <span class="mini back"></span>
+          <span class="mini-arrow" aria-hidden="true"></span>
+          <span class="mini face">光</span>
+        </div>
+        <div class="rule-label">翻牌</div>
+      </div>
+      <div class="rule-step">
+        <div class="rule-art art-glow">
+          <span class="mini small empty"></span><span class="mini small face ghost">魚</span><span class="mini small empty"></span>
+          <span class="mini small face ghost">東</span><span class="mini small face">光</span><span class="mini small face ghost">發</span>
+          <span class="mini small empty"></span><span class="mini small face ghost">猫</span><span class="mini small empty"></span>
+        </div>
+        <div class="rule-label">浮光</div>
+      </div>
+      <div class="rule-step">
+        <div class="rule-art art-pair">
+          <span class="mini face tilt-l">光</span>
+          <span class="mini-spark" aria-hidden="true">✦</span>
+          <span class="mini face tilt-r">光</span>
+        </div>
+        <div class="rule-label">配对</div>
+      </div>
+    </div>
+    <div class="rule-notes">
+      <div class="rule-note">
+        <svg class="i"><use href="#i-spark"/></svg>
+        <div><b>步数</b><span>每翻一张 −1 步<br>步数用完即失败</span></div>
+      </div>
+      <div class="rule-note">
+        <div>
+          <b>明牌<span class="note-slots"><i></i><i></i><i></i><i></i></span></b>
+          <span>翻开的牌保持正面朝上，最多留 4 张<br>满了最早的自动盖回；「扩位」再 +1 格</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet hidden" id="menuSheet">
+  <div class="sheet-card menu-card">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <span class="sheet-ico"><svg class="i"><use href="#i-menu"/></svg></span>
+      <div class="sheet-title">菜单</div>
+      <button class="sheet-close" id="menuClose" type="button" aria-label="关闭">
+        <svg class="i"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <div class="menu-list">
+      <button class="menu-row" id="menuRules" type="button">
+        <span class="menu-ico"><svg class="i"><use href="#i-info"/></svg></span>
+        <span class="menu-label">规则</span>
+        <span class="menu-arrow">›</span>
+      </button>
+      <div class="menu-row">
+        <span class="menu-ico"><svg class="i"><use href="#i-music"/></svg></span>
+        <span class="menu-label">背景音乐</span>
+        <button class="switch" id="bgmSwitch" type="button" role="switch" aria-checked="true" aria-label="背景音乐"><i></i></button>
+      </div>
+      <div class="menu-row">
+        <span class="menu-ico"><svg class="i"><use href="#i-sound"/></svg></span>
+        <span class="menu-label">游戏音效</span>
+        <button class="switch" id="sfxSwitch" type="button" role="switch" aria-checked="true" aria-label="游戏音效"><i></i></button>
+      </div>
+      <div class="menu-row">
+        <span class="menu-ico"><svg class="i"><use href="#i-vibrate"/></svg></span>
+        <span class="menu-label">震动</span>
+        <button class="switch" id="vibSwitch" type="button" role="switch" aria-checked="true" aria-label="震动"><i></i></button>
+      </div>
+      <button class="menu-row restart-row" id="menuRestart" type="button">
+        <span class="menu-ico"><svg class="i"><use href="#i-replay"/></svg></span>
+        <span class="menu-label">重新开始</span>
+        <span class="menu-hint">本局</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="fail-modal hidden" id="failModal">
+  <div class="fail-card" role="dialog" aria-modal="true" aria-labelledby="failTitle">
+    <div class="fail-crest"><svg class="i"><use href="#i-spark"/></svg></div>
+    <h2 class="fail-title" id="failTitle">步数用完了</h2>
+    <p class="fail-desc" id="failDesc">还剩 3 对未配对</p>
+    <div class="fail-actions">
+      <button class="cta fail-revive" id="failRevive" type="button">
+        <svg class="i"><use href="#i-ad"/></svg>
+        <span class="cta-label">看广告复活</span>
+        <span class="revive-badge">+5</span>
+      </button>
+      <div class="fail-hint">广告结束后 · 步数 +5</div>
+      <button class="cta fail-restart" id="failRestart" type="button">
+        <svg class="i"><use href="#i-replay"/></svg>
+        <span>重新开始</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="ad-modal hidden" id="adModal">
+  <div class="ad-box">
+    <div class="ad-icon"><svg class="i"><use href="#i-ad"/></svg></div>
+    <div class="ad-title">步数补给</div>
+    <div class="ad-text" id="adText">3</div>
+    <div class="ad-bar"><i></i></div>
+  </div>
+</div>
+
+<div class="gift-modal" id="giftModal" aria-hidden="true">
+  <div class="gift-card" role="dialog" aria-modal="true" aria-labelledby="giftTitle">
+    <div class="gift-stage">
+      <span class="gift-rays"></span>
+      <span class="gift-spark s1"></span>
+      <span class="gift-spark s2"></span>
+      <span class="gift-spark s3"></span>
+      <span class="gift-spark s4"></span>
+      <div class="gift-box">
+        <span class="gift-lid"></span>
+        <span class="gift-body"></span>
+        <span class="gift-ribbon-v"></span>
+        <span class="gift-ribbon-h"></span>
+      </div>
+    </div>
+    <div class="gift-kicker" id="giftKicker">第 10 关礼物</div>
+    <h2 class="gift-title" id="giftTitle">明牌位 +1</h2>
+    <p class="gift-desc" id="giftDesc">后续关卡永久为5位</p>
+    <div class="gift-pips" id="giftPips"></div>
+    <button class="cta primary gift-claim" id="giftClaim" type="button">
+      <span class="cta-icon"><svg class="i"><use href="#i-spark"/></svg></span>
+      <span class="cta-label">收下礼物</span>
+    </button>
+  </div>
+</div>
+
+
+<script src="assets/tiles.js?v=8"></script>
+<script src="assets/levels.js?v=32"></script>
+<script>
+(() => {
+  'use strict';
+
+  const TILES = window.FUANG_TILES || {};
+  const LEVELS = window.FUANG_LEVELS || [];
+  const LEVEL_COUNT = LEVELS.length || 1;
+  const GIFT_LEVEL = 10;
+  let giftSlots = 0;
+  try { localStorage.removeItem('fuang.gift.slot'); } catch (e) {}
+
+  // 关卡数据缺失时的兜底：3×2 六张牌，仍能完整演示规则。
+  const FALLBACK_LEVEL = {
+    level: 1, name: '茶室·初见', tiles: 6, pairs: 3, layers: 1,
+    steps: 12, peekMs: 1500, w: 4,
+    layout: [
+      { id: 0, x: 0, y: 0, z: 0, face: 'cat' },
+      { id: 1, x: 1, y: 0, z: 0, face: 'dog' },
+      { id: 2, x: 2, y: 0, z: 0, face: 'fish' },
+      { id: 3, x: 0, y: 1, z: 0, face: 'cat' },
+      { id: 4, x: 1, y: 1, z: 0, face: 'fish' },
+      { id: 5, x: 2, y: 1, z: 0, face: 'dog' }
+    ]
+  };
+
+  function getLevel(n) {
+    if (!LEVELS.length) return FALLBACK_LEVEL;
+    const i = Math.max(0, Math.min(LEVELS.length - 1, (Number(n) || 1) - 1));
+    return LEVELS[i];
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const board = $('board');
+  const boardWrap = $('boardWrap');
+  const boardViewport = $('boardViewport');
+  const scoreEl = $('score');
+  const comboFlash = $('comboFlash');
+  const stepsEl = $('steps');
+  const stepsStat = $('stepsStat');
+  const pipsEl = $('pips');
+  const hintLine = $('hintLine');
+  const coachTip = $('coachTip');
+  const overlay = $('overlay');
+  const menuSheet = $('menuSheet');
+  const menuRestartEl = $('menuRestart');
+  const adModal = $('adModal');
+  const adText = $('adText');
+  const failModal = $('failModal');
+  const failTitle = $('failTitle');
+  const failDesc = $('failDesc');
+  const failReviveLabel = $('failRevive').querySelector('.cta-label');
+  const failReviveBadge = $('failRevive').querySelector('.revive-badge');
+  const failHintEl = $('failModal').querySelector('.fail-hint');
+  const hintBtn = $('hintBtn');
+  const echoBtn = $('echoBtn');
+  const hintCount = $('hintCount');
+  const echoCount = $('echoCount');
+  const slotBoostBtn = $('slotBoostBtn');
+  const slotBoostCount = $('slotBoostCount');
+  const fxCanvas = $('fx');
+  const fxCtx = fxCanvas.getContext('2d');
+  const homeScreen = $('homeScreen');
+  const gameScreen = $('gameScreen');
+  const resultScreen = $('resultScreen');
+  const startBtn = $('startBtn');
+  const startLabel = $('startLabel');
+  const levelPickBtn = $('levelPickBtn');
+  const levelPicker = $('levelPicker');
+  const lpGrid = $('lpGrid');
+  const lpClose = $('lpClose');
+  const homeBtn = $('homeBtn');
+  const resultHomeBtn = $('resultHomeBtn');
+  const sheetClose = $('sheetClose');
+  const resultTitle = $('resultTitle');
+  const resultSub = $('resultSub');
+  const resultRank = $('resultRank');
+  const resultStats = $('resultStats');
+  const resultBonus = $('resultBonus');
+  const resultActions = $('resultActions');
+  const goalSegs = $('goalSegs');
+  const goalText = $('goalText');
+  const giftModal = $('giftModal');
+  const giftKicker = $('giftKicker');
+  const giftTitle = $('giftTitle');
+  const giftDesc = $('giftDesc');
+  const giftPips = $('giftPips');
+  const giftClaim = $('giftClaim');
+  let giftOpenTimer = null;
+  let giftCloseCb = null;
+
+  const TW = 81, TH = 108;
+  const PITCH_X = 94, PITCH_Y = 118;
+  const OFF_X = 28, OFF_Y = 22, Z_SHIFT = 18;
+
+  const state = {
+    gen: 0,
+    level: 1,
+    levelName: '',
+    w: 4,
+    peekMs: 600,
+    tiles: [],
+    score: 0,
+    combo: 0,
+    maxCombo: 0,
+    steps: getLevel(1).steps || 12,
+    matched: 0,
+    flips: 0,
+    evictions: 0,
+    lastMatch: 0,
+    running: false,
+    resolving: false,
+    evicting: false,
+    over: false,
+    dead: false,
+    started: false,
+    allClear: false,
+    boardW: 420,
+    boardH: 420,
+    minL: 0,
+    minT: 0,
+    padX: OFF_X,
+    padY: OFF_Y,
+    hint: 1,
+    echo: 1,
+    slotPlus: 1,
+    bgm: true,
+    sfx: true,
+    haptics: true,
+    startedAt: 0,
+    pending: new Set()
+  };
+
+  let comboTimer = null;
+  let hintTimer = null;
+  let tutorialStep = 0;
+  let tutorialDone = false;
+  let tutorialTarget = null;
+  let tutorialTimer = null;
+  let lastComboShown = 0;
+  let scoreAnimToken = 0;
+  let audioCtx = null;
+  const samples = {
+    stone: { url: 'assets/stone-crack.mp3', bytes: null, buf: null, loading: false, decoding: false },
+    flip: { url: 'assets/flip.mp3', bytes: null, buf: null, loading: false, decoding: false }
+  };
+  const bgmEl = new Audio('assets/stream.mp3');
+  bgmEl.loop = true;
+  bgmEl.preload = 'auto';
+  bgmEl.volume = 0.10;
+  const homeBgmEl = new Audio('assets/home-bgm.mp3');
+  homeBgmEl.loop = true;
+  homeBgmEl.preload = 'auto';
+  homeBgmEl.volume = 0.20;
+  const resultEl = new Audio('assets/result.mp3');
+  resultEl.preload = 'auto';
+  resultEl.volume = 0.20;
+  resultEl.addEventListener('ended', () => {
+    if (document.body.dataset.screen === 'result' && state.bgm) startBgm();
+  });
+  let fxParts = [];
+  let fxRaf = 0;
+
+  function loadSample(name) {
+    const s = samples[name];
+    if (!s || s.bytes || s.loading) return;
+    s.loading = true;
+    fetch(s.url)
+      .then(r => { if (!r.ok) throw new Error(name + ' ' + r.status); return r.arrayBuffer(); })
+      .then(b => { s.bytes = b; decodeSample(name); })
+      .catch(() => {})
+      .then(() => { s.loading = false; });
+  }
+
+  function loadSamples() { Object.keys(samples).forEach(loadSample); }
+
+  function startHomeBgm() {
+    if (!state.bgm || !homeBgmEl.paused) return;
+    const p = homeBgmEl.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  function stopHomeBgm() {
+    homeBgmEl.pause();
+  }
+
+  function startBgm() {
+    stopHomeBgm();
+    if (!state.bgm || !bgmEl.paused) return;
+    const p = bgmEl.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  function stopBgm() {
+    bgmEl.pause();
+  }
+
+  function startScreenBgm() {
+    if (!state.bgm) return;
+    const scr = document.body.dataset.screen;
+    if (scr === 'home') startHomeBgm();
+    else if (scr !== 'result') startBgm();
+  }
+
+  function startResultMusic() {
+    if (!state.bgm) return;
+    try {
+      resultEl.currentTime = 0;
+      const p = resultEl.play();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* audio is optional */ }
+  }
+
+  function stopResultMusic() {
+    try {
+      resultEl.pause();
+      resultEl.currentTime = 0;
+    } catch (e) { /* audio is optional */ }
+  }
+
+  // 提前建好 AudioContext 并解码，首次点击就能用实录音效
+  function primeAudio() {
+    if (!state.bgm && !state.sfx) return;
+    try {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+      }
+      Object.keys(samples).forEach(decodeSample);
+    } catch (e) { /* audio is optional */ }
+  }
+  function decodeSample(name) {
+    const s = samples[name];
+    if (!audioCtx || !s || !s.bytes || s.buf || s.decoding) return;
+    s.decoding = true;
+    audioCtx.decodeAudioData(s.bytes.slice(0))
+      .then(b => { s.buf = b; })
+      .catch(() => {})
+      .then(() => { s.decoding = false; });
+  }
+
+  function ensureAudio() {
+    if (!state.bgm && !state.sfx) return null;
+    try {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') {
+        const p = audioCtx.resume();
+        if (p && p.then) p.then(startScreenBgm).catch(() => {});
+        else startScreenBgm();
+      } else {
+        startScreenBgm();
+      }
+      Object.keys(samples).forEach(decodeSample);
+      return audioCtx;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function playSample(name, vol, rate = 1, delay = 0) {
+    if (!state.sfx) return false;
+    const ac = ensureAudio();
+    if (!ac) return false;
+    const s = samples[name];
+    if (!s || !s.buf) return false;
+    try {
+      const src = ac.createBufferSource();
+      const g = ac.createGain();
+      src.buffer = s.buf;
+      src.playbackRate.value = rate;
+      g.gain.value = vol;
+      src.connect(g).connect(ac.destination);
+      src.start(ac.currentTime + delay);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function beep(freq, dur = 0.06, type = 'sine', vol = 0.04, slideTo = null) {
+    if (!state.sfx) return;
+    const ac = ensureAudio();
+    if (!ac) return;
+    try {
+      const now = ac.currentTime;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, now + dur);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + dur + 0.03);
+    } catch (e) { /* audio is optional */ }
+  }
+
+  // 配对碰撞：优先播放碎石 mp3；未解码/加载失败时退回合成音
+  function stoneCrack() {
+    const ac = ensureAudio();
+    if (!ac) return;
+    if (playSample('stone', 0.62)) return;
+    stoneCrackSynth(ac);
+  }
+
+  // 翻牌：实录音效 + 轻微随机音高，避免机械重复
+  function flipSound() {
+    const rate = 0.97 + Math.random() * 0.06;
+    if (playSample('flip', 0.30, rate)) return;
+    beep(300, 0.16, 'sine', 0.022, 210);
+  }
+
+  const COMBO_NOTES = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];
+
+  function chimeNote(ac, freq, vol, dur, delay) {
+    try {
+      const t0 = ac.currentTime + delay;
+      const osc = ac.createOscillator();
+      const g = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(vol, t0 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g).connect(ac.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    } catch (e) { /* audio is optional */ }
+  }
+
+  // 连击音阶：五声音阶上行，叠加一层八度泛音做空灵感
+  function comboChime(combo) {
+    const ac = ensureAudio();
+    if (!ac) return;
+    const idx = Math.max(0, Math.min(COMBO_NOTES.length - 1, combo - 1));
+    const f = COMBO_NOTES[idx];
+    chimeNote(ac, f, 0.09, 0.55, 0.09);
+    chimeNote(ac, f * 2, 0.025, 0.42, 0.12);
+    if (combo >= 3) chimeNote(ac, f * 1.5, 0.04, 0.5, 0.16);
+  }
+
+  // 合成备选：带通噪声 + 低频撞击 + 几粒高频碎屑
+  function stoneCrackSynth(ac) {
+    try {
+      const now = ac.currentTime;
+      const sr = ac.sampleRate;
+      const dur = 0.26;
+      const buf = ac.createBuffer(1, Math.floor(sr * dur), sr);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const k = 1 - i / data.length;
+        data[i] = (Math.random() * 2 - 1) * k * k;
+      }
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2400, now);
+      bp.frequency.exponentialRampToValueAtTime(700, now + dur);
+      bp.Q.value = 1.1;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.3, now + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(bp).connect(g).connect(ac.destination);
+      src.start(now);
+
+      const osc = ac.createOscillator();
+      const og = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(52, now + 0.18);
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.linearRampToValueAtTime(0.12, now + 0.008);
+      og.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      osc.connect(og).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+
+      for (let i = 0; i < 3; i++) {
+        const t = now + 0.02 + i * 0.035;
+        const o = ac.createOscillator();
+        const gg = ac.createGain();
+        o.type = 'square';
+        o.frequency.setValueAtTime(1200 + Math.random() * 1600, t);
+        gg.gain.setValueAtTime(0.018, t);
+        gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+        o.connect(gg).connect(ac.destination);
+        o.start(t);
+        o.stop(t + 0.06);
+      }
+    } catch (e) { /* audio is optional */ }
+  }
+
+  let fxLast = 0;
+  function sizeFx() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    fxCanvas.width = state.boardW * dpr;
+    fxCanvas.height = state.boardH * dpr;
+    fxCanvas.style.width = state.boardW + 'px';
+    fxCanvas.style.height = state.boardH + 'px';
+    fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawnDebris(cx, cy) {
+    const palette = ['#f6edd8', '#e8d7b5', '#d6b25e', '#7fbf9f', '#b23a2f', '#3d8a6d'];
+    for (let i = 0; i < 26; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 0.8 + Math.random() * 3.4;
+      fxParts.push({
+        x: cx + (Math.random() - 0.5) * 10,
+        y: cy + (Math.random() - 0.5) * 10,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 1.5,
+        w: 2 + Math.random() * 5,
+        h: 2 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.5,
+        life: 1,
+        decay: 0.012 + Math.random() * 0.009,
+        color: palette[(Math.random() * palette.length) | 0]
+      });
+    }
+    fxParts.push({ ring: true, x: cx, y: cy, r: 6, life: 1, decay: 0.07, color: '#ffe6a6' });
+    if (!fxRaf) {
+      fxLast = 0;
+      fxRaf = requestAnimationFrame(drawFx);
+    }
+  }
+
+  function drawFx(t) {
+    const dt = fxLast ? Math.min(2.4, (t - fxLast) / 16.67) : 1;
+    fxLast = t;
+    fxCtx.clearRect(0, 0, state.boardW, state.boardH);
+    fxParts = fxParts.filter(p => p.life > 0);
+    for (const p of fxParts) {
+      p.life -= p.decay * dt;
+      if (p.ring) {
+        p.r += 5 * dt;
+        fxCtx.globalAlpha = Math.max(0, p.life) * 0.7;
+        fxCtx.strokeStyle = p.color;
+        fxCtx.lineWidth = 2.5;
+        fxCtx.beginPath();
+        fxCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        fxCtx.stroke();
+      } else {
+        p.vy += 0.24 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+        if (p.y > state.boardH - 8) {
+          p.y = state.boardH - 8;
+          p.vy *= -0.32;
+          p.vx *= 0.7;
+        }
+        fxCtx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
+        fxCtx.fillStyle = p.color;
+        fxCtx.save();
+        fxCtx.translate(p.x, p.y);
+        fxCtx.rotate(p.rot);
+        fxCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        fxCtx.restore();
+      }
+    }
+    fxCtx.globalAlpha = 1;
+    if (fxParts.length) {
+      fxRaf = requestAnimationFrame(drawFx);
+    } else {
+      fxRaf = 0;
+      fxLast = 0;
+      fxCtx.clearRect(0, 0, state.boardW, state.boardH);
+    }
+  }
+
+  function vibrate(pattern) {
+    if (!state.haptics || !navigator.vibrate) return;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+    try { navigator.vibrate(pattern); } catch (e) { /* optional */ }
+  }
+
+  function setHint(msg, hold = 2600) {
+    if (hintTimer) {
+      clearTimeout(hintTimer);
+      hintTimer = null;
+    }
+    hintLine.textContent = msg || '';
+    if (!msg) {
+      hintLine.classList.remove('show');
+      return;
+    }
+    hintLine.classList.add('show');
+    hintTimer = setTimeout(() => hintLine.classList.remove('show'), hold);
+  }
+
+  function showScreen(name) {
+    homeScreen.classList.toggle('is-active', name === 'home');
+    gameScreen.classList.toggle('is-active', name === 'game');
+    resultScreen.classList.toggle('is-active', name === 'result');
+    document.body.dataset.screen = name;
+    if (name !== 'game') {
+      hideCoachTip();
+      clearCoachMarks();
+    }
+    if (name !== 'result') hideGiftPopup();
+    if (name === 'home') {
+      updateStartLabel();
+      startHomeBgm();
+    }
+    if (name === 'game') {
+      requestAnimationFrame(resize);
+      setTimeout(resize, 80);
+      setTimeout(startTutorial, 140);
+    }
+  }
+
+  function updateStartLabel() {
+    startLabel.textContent = '关卡 ' + (state.allClear ? 1 : Math.min(state.level, LEVEL_COUNT));
+  }
+
+  function beginGame() {
+    closeFail();
+    stopResultMusic();
+    if (state.allClear) {
+      state.level = 1;
+      state.allClear = false;
+    }
+    if (state.over || !state.started) {
+      init();
+      state.started = true;
+    }
+    ensureAudio();
+    startBgm();
+    showScreen('game');
+  }
+
+  function backHome() {
+    closeFail();
+    closeMenu();
+    stopResultMusic();
+    scoreAnimToken += 1;
+    stopBgm();
+    startHomeBgm();
+    showScreen('home');
+    updateStartLabel();
+  }
+
+  function syncMenuSwitches() {
+    $('bgmSwitch').setAttribute('aria-checked', String(state.bgm));
+    $('sfxSwitch').setAttribute('aria-checked', String(state.sfx));
+    $('vibSwitch').setAttribute('aria-checked', String(state.haptics));
+  }
+
+  const GEOM_EPS = 1e-6;
+  function overlaps(a, b) {
+    return Math.abs(a.x - b.x) * PITCH_X < TW - GEOM_EPS &&
+      Math.abs(a.y - b.y) * PITCH_Y < TH - GEOM_EPS;
+  }
+  function isCovered(t) {
+    return state.tiles.some(u => u.state !== 'matched' && u.z === t.z + 1 && overlaps(t, u));
+  }
+
+  function isFree(t) {
+    if (t.state === 'matched') return false;
+    let covered = false;
+    let left = false;
+    let right = false;
+    for (const u of state.tiles) {
+      if (u.state === 'matched') continue;
+      if (u.z === t.z + 1 && overlaps(t, u)) covered = true;
+      if (u.z === t.z && Math.abs(u.y - t.y) < GEOM_EPS && Math.abs(u.x - (t.x - 1)) < GEOM_EPS) left = true;
+      if (u.z === t.z && Math.abs(u.y - t.y) < GEOM_EPS && Math.abs(u.x - (t.x + 1)) < GEOM_EPS) right = true;
+    }
+    return !covered && (!left || !right);
+  }
+
+  function buildBoard() {
+    board.innerHTML = '';
+    for (const t of state.tiles) {
+      const el = document.createElement('div');
+      el.className = 'tile';
+      el.dataset.id = String(t.id);
+      el.dataset.face = t.face;
+      el.style.left = (state.padX + t.x * PITCH_X - t.z * Z_SHIFT - state.minL) + 'px';
+      el.style.top = (state.padY + t.y * PITCH_Y - t.z * Z_SHIFT - state.minT) + 'px';
+      el.style.zIndex = String(Math.round(t.z * 200 + t.y * 20 + t.x * 2 + 2));
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      const face = TILES[t.face] || { label: t.face, color: '#2f7d5b', art: '' };
+      el.setAttribute('aria-label', face.label + '牌');
+      const faceInner = face.art
+        ? '<svg class="face-art" viewBox="0 0 100 133.333" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(0 16.667)">' + face.art + '</g></svg>'
+        : '<span class="face-text" style="color:' + face.color + '">' + face.label + '</span>';
+      el.innerHTML =
+        '<div class="edge"></div>' +
+        '<div class="rim"></div>' +
+        '<div class="inner">' +
+          '<div class="back"></div>' +
+          '<div class="face">' + faceInner + '</div>' +
+        '</div>' +
+        '<div class="ghost-ring"></div>' +
+        '<div class="coach-ring"></div>';
+      el.addEventListener('click', () => onTileClick(t));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onTileClick(t);
+        }
+      });
+      board.appendChild(el);
+      t.el = el;
+    }
+  }
+
+  function render() {
+    for (const t of state.tiles) {
+      const el = t.el;
+      if (!el) continue;
+      el.classList.toggle('up', t.state === 'up' || t.state === 'matched');
+      el.classList.toggle('matched', t.state === 'matched');
+      const free = t.state !== 'matched' && isFree(t);
+      const covered = t.state !== 'matched' && isCovered(t);
+      el.classList.toggle('free', free);
+      el.classList.toggle('blocked', covered);
+      el.classList.toggle('clamped', t.state !== 'matched' && !free && !covered);
+      el.setAttribute('aria-label', t.state === 'matched' ? '已消除'
+        : free ? '自由牌'
+        : covered ? '被上层压住'
+        : '左右被夹住');
+      if (t.state === 'matched') el.style.pointerEvents = 'none';
+    }
+    updateHUD();
+  }
+
+  function updateHUD() {
+    scoreEl.textContent = String(state.score);
+    if (state.combo >= 2 && state.combo > lastComboShown) {
+      comboFlash.textContent = 'COMBO ×' + state.combo;
+      comboFlash.classList.remove('show');
+      void comboFlash.offsetWidth;
+      comboFlash.classList.add('show');
+    }
+    lastComboShown = state.combo;
+    stepsEl.textContent = String(state.steps);
+    stepsStat.classList.toggle('low', state.steps <= 3);
+
+    const count = state.tiles.filter(t => t.state === 'up' && !state.pending.has(t.id)).length;
+    pipsEl.innerHTML = '';
+    for (let i = 0; i < state.w; i++) {
+      const d = document.createElement('span');
+      d.className = 'pip' + (i < count ? ' filled' : '');
+      if (i === state.w - 1 && count >= state.w) d.classList.add('warn');
+      pipsEl.appendChild(d);
+    }
+  }
+
+  function updateBoosters() {
+    hintCount.textContent = String(state.hint);
+    echoCount.textContent = String(state.echo);
+    slotBoostCount.textContent = String(state.slotPlus);
+    hintBtn.disabled = state.over || state.hint <= 0;
+    echoBtn.disabled = state.over || state.echo <= 0;
+    slotBoostBtn.disabled = state.over || state.slotPlus <= 0;
+  }
+
+  function scheduleComboReset() {
+    if (comboTimer) clearTimeout(comboTimer);
+    const gen = state.gen;
+    comboTimer = setTimeout(() => {
+      if (gen !== state.gen) return;
+      state.combo = 0;
+      updateHUD();
+    }, 3000);
+  }
+
+  function clearGhost(t) {
+    if (t.ghostTimer) {
+      clearTimeout(t.ghostTimer);
+      t.ghostTimer = null;
+    }
+    if (t.el) t.el.classList.remove('ghost');
+  }
+
+  function peek(t) {
+    const gen = state.gen;
+    fxParts.push({ ring: true, x: t.el.offsetLeft + TW / 2, y: t.el.offsetTop + TH / 2, r: 8, life: 1, decay: 0.055, color: '#ffe6a6' });
+    if (!fxRaf) {
+      fxLast = 0;
+      fxRaf = requestAnimationFrame(drawFx);
+    }
+    // Max four: same-layer touching neighbours. Rows may be offset by up to
+    // half a cell, so a vertical neighbour can sit at a fractional dx.
+    const EPS = 1e-6;
+    const neighbors = state.tiles
+      .filter(u => {
+        if (u.z !== t.z || u.state !== 'down') return false;
+        const dx = Math.abs(u.x - t.x);
+        const dy = Math.abs(u.y - t.y);
+        const horizontal = dy < EPS && Math.abs(dx - 1) < EPS;
+        const vertical = Math.abs(dy - 1) < EPS && dx <= 0.5 + EPS;
+        return horizontal || vertical;
+      })
+      .sort((a, b) => {
+        const ay = Math.abs(a.y - t.y), by = Math.abs(b.y - t.y);
+        if ((ay < EPS) !== (by < EPS)) return ay < EPS ? -1 : 1;
+        return Math.abs(a.x - t.x) - Math.abs(b.x - t.x);
+      })
+      .slice(0, 4);
+    // The reveal travels outward like a ripple: each tile flashes its face
+    // as the wavefront reaches it, then fades back to its back.
+    const dur = Math.max(360, Math.min(620, state.peekMs));
+    for (const u of neighbors) {
+      clearGhost(u);
+      const ring = Math.max(Math.abs(u.x - t.x), Math.abs(u.y - t.y));
+      const delay = 50 + (ring - 1) * 90;
+      u.el.style.setProperty('--peek', dur + 'ms');
+      u.el.style.setProperty('--delay', delay + 'ms');
+      u.el.classList.add('ghost');
+      u.ghostTimer = setTimeout(() => {
+        if (gen !== state.gen) return;
+        u.el.classList.remove('ghost');
+        u.ghostTimer = null;
+      }, delay + dur + 40);
+    }
+  }
+
+  function flip(t) {
+    if (state.over) return;
+    if (state.steps <= 0) {
+      setHint('步数用完了：看广告或重开');
+      checkEnd();
+      return;
+    }
+    clearGhost(t);
+    t.el.classList.remove('hint', 'reveal');
+    t.state = 'up';
+    t.discoveredAt = performance.now();
+    state.steps -= 1;
+    state.flips += 1;
+    state.running = true;
+    if (!state.startedAt) state.startedAt = performance.now();
+    tutorialAfterFlip(t);
+    t.el.classList.add('up');
+    flipSound();
+    vibrate(8);
+    updateHUD();
+    render();
+    peek(t);
+    resolveBoard();
+    const gen = state.gen;
+    setTimeout(() => {
+      if (gen !== state.gen) return;
+      checkEnd();
+    }, 420);
+  }
+
+  function resolveBoard() {
+    if (state.over || state.resolving) return;
+    const ups = state.tiles.filter(t => t.state === 'up' && !state.pending.has(t.id));
+    let pair = null;
+    for (let i = 0; i < ups.length && !pair; i++) {
+      for (let j = i + 1; j < ups.length; j++) {
+        if (ups[i].face === ups[j].face && isFree(ups[i]) && isFree(ups[j])) {
+          pair = [ups[i], ups[j]];
+          break;
+        }
+      }
+    }
+    if (!pair) {
+      checkEviction();
+      return;
+    }
+    state.resolving = true;
+    state.pending.add(pair[0].id);
+    state.pending.add(pair[1].id);
+    pair[0].el.classList.add('pending');
+    pair[1].el.classList.add('pending');
+    const gen = state.gen;
+    setTimeout(() => {
+      if (gen !== state.gen) return;
+      doMatch(pair[0], pair[1]);
+    }, 160);
+  }
+
+  function doMatch(a, b) {
+    const gen = state.gen;
+    if (state.level === 1 && !tutorialDone) {
+      if (tutorialStep === 2 || tutorialStep === 3) tutorialAfterMatch();
+    } else {
+      finishTutorial();
+    }
+    const cx = state.boardW / 2;
+    const cy = state.boardH / 2;
+    const acx = a.el.offsetLeft + TW / 2;
+    const acy = a.el.offsetTop + TH / 2;
+    const bcx = b.el.offsetLeft + TW / 2;
+    const bcy = b.el.offsetTop + TH / 2;
+    const adx = cx - acx, ady = cy - acy;
+    const bdx = cx - bcx, bdy = cy - bcy;
+
+    state.pending.add(a.id);
+    state.pending.add(b.id);
+    a.el.classList.remove('pending');
+    b.el.classList.remove('pending');
+    a.el.classList.add('flying');
+    b.el.classList.add('flying');
+
+    const fly = (el, dx, dy, spin) => el.animate([
+      { transform: 'translate(0,0) scale(1) rotate(0deg)' },
+      { transform: 'translate(' + (dx * 0.58) + 'px,' + (dy * 0.58) + 'px) scale(1.06) rotate(' + spin * 0.45 + 'deg)', offset: 0.6 },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.55) rotate(' + spin + 'deg)' }
+    ], { duration: 290, easing: 'cubic-bezier(.5,-0.05,.9,.55)', fill: 'forwards' });
+    fly(a.el, adx, ady, -9);
+    fly(b.el, bdx, bdy, 9);
+
+    setTimeout(() => {
+      if (gen !== state.gen) return;
+      vibrate([12, 26, 18]);
+      spawnDebris(cx, cy);
+
+      a.state = 'matched';
+      b.state = 'matched';
+      state.pending.delete(a.id);
+      state.pending.delete(b.id);
+      state.matched += 2;
+
+      const now = performance.now();
+      state.combo = (now - state.lastMatch <= 3000) ? state.combo + 1 : 1;
+      state.lastMatch = now;
+      state.maxCombo = Math.max(state.maxCombo, state.combo);
+      stoneCrack();
+      comboChime(state.combo);
+
+      const mult = Math.min(5, 1 + 0.2 * (state.combo - 1));
+      const bonus = state.combo >= 5 ? 2 : (state.combo >= 3 ? 1 : 0);
+      state.score += Math.round(100 * mult) + bonus * 20;
+
+      updateHUD();
+      render();
+      scheduleComboReset();
+
+      setTimeout(() => {
+        if (gen !== state.gen) return;
+        a.el.style.display = 'none';
+        b.el.style.display = 'none';
+        state.resolving = false;
+        if (state.tiles.every(t => t.state === 'matched')) {
+          win();
+          return;
+        }
+        resolveBoard();
+      }, 150);
+    }, 280);
+  }
+
+  function checkEviction() {
+    if (state.over || state.resolving || state.evicting) return;
+    const ups = state.tiles
+      .filter(t => t.state === 'up' && !state.pending.has(t.id))
+      .sort((a, b) => a.discoveredAt - b.discoveredAt);
+    if (ups.length <= state.w) {
+      checkEnd();
+      return;
+    }
+    const victim = ups[0];
+    const gen = state.gen;
+    state.evicting = true;
+    state.resolving = true;
+    victim.el.classList.add('evict-warn');
+    beep(240, 0.12, 'sine', 0.03, 180);
+    setHint('明牌满了：最早的牌即将盖回');
+    setTimeout(() => {
+      if (gen !== state.gen) return;
+      victim.el.classList.remove('evict-warn');
+      if (victim.state === 'up') {
+        victim.state = 'down';
+        victim.discoveredAt = 0;
+        state.evictions += 1;
+        victim.el.classList.remove('up');
+        beep(180, 0.2, 'sine', 0.03, 90);
+        vibrate(15);
+      }
+      state.evicting = false;
+      state.resolving = false;
+      render();
+      updateHUD();
+      checkEviction();
+    }, 600);
+  }
+
+  function checkEnd() {
+    if (state.over || state.resolving || state.evicting) return;
+    if (state.tiles.every(t => t.state === 'matched')) {
+      win();
+      return;
+    }
+    const freeDown = state.tiles.some(t => t.state === 'down' && isFree(t));
+    if (!freeDown) {
+      const ups = state.tiles.filter(t => t.state === 'up' && isFree(t));
+      let hasPair = false;
+      for (let i = 0; i < ups.length && !hasPair; i++) {
+        for (let j = i + 1; j < ups.length; j++) {
+          if (ups[i].face === ups[j].face) { hasPair = true; break; }
+        }
+      }
+      if (!hasPair) {
+        fail('dead');
+        return;
+      }
+    }
+    if (state.steps <= 0) fail();
+  }
+
+  function onTileClick(t) {
+    if (!overlay.classList.contains('hidden')) return;
+    if (!adModal.classList.contains('hidden')) return;
+    if (state.over || state.resolving || state.evicting) return;
+    if (t.state !== 'down') {
+      pulse(t);
+      return;
+    }
+    if (!isFree(t)) {
+      shake(t);
+      beep(140, 0.05, 'square', 0.02);
+      setHint(isCovered(t) ? '被上层压住：先清掉上面的牌' : '左右被夹住：先清掉同层一侧的牌');
+      return;
+    }
+    if (state.steps <= 0) {
+      setHint('步数用完了：看广告或重开');
+      checkEnd();
+      return;
+    }
+    flip(t);
+  }
+
+  function shake(t) {
+    t.el.classList.remove('shake');
+    void t.el.offsetWidth;
+    t.el.classList.add('shake');
+    setTimeout(() => t.el.classList.remove('shake'), 280);
+  }
+
+  function pulse(t) {
+    t.el.classList.remove('pulse');
+    void t.el.offsetWidth;
+    t.el.classList.add('pulse');
+    setTimeout(() => t.el.classList.remove('pulse'), 240);
+  }
+
+  function hideCoachTip() {
+    coachTip.classList.remove('show');
+    if (tutorialTimer) {
+      clearTimeout(tutorialTimer);
+      tutorialTimer = null;
+    }
+  }
+
+  function clearCoachMarks() {
+    state.tiles.forEach(t => { if (t.el) t.el.classList.remove('coach', 'coach-reveal'); });
+    stepsStat.classList.remove('coach-stat');
+    pipsEl.parentElement.classList.remove('coach-stat');
+  }
+
+  function clearTutorial() {
+    hideCoachTip();
+    clearCoachMarks();
+    tutorialStep = 0;
+    tutorialTarget = null;
+  }
+
+  function positionCoachTip() {
+    if (!coachTip.classList.contains('show') || !tutorialTarget || !tutorialTarget.el) return;
+    const r = tutorialTarget.el.getBoundingClientRect();
+    const tw = coachTip.offsetWidth;
+    const th = coachTip.offsetHeight;
+    const gap = 11;
+    const hasAbove = !tutorialTarget.hud && state.tiles.some(u => u !== tutorialTarget && u.state !== 'matched' &&
+      u.x === tutorialTarget.x && u.y === tutorialTarget.y - 1 && u.z === tutorialTarget.z);
+    const side = tutorialTarget.hud ? 'bottom' : (!hasAbove && r.top > th + 28 ? 'top' : 'bottom');
+    const left = Math.min(window.innerWidth - tw / 2 - 10, Math.max(tw / 2 + 10, r.left + r.width / 2));
+    const top = side === 'top' ? r.top - th - gap : r.bottom + gap;
+    coachTip.dataset.side = side;
+    coachTip.style.left = left + 'px';
+    coachTip.style.top = top + 'px';
+  }
+
+  function showCoachTip(text) {
+    coachTip.textContent = text;
+    coachTip.classList.add('show');
+    positionCoachTip();
+  }
+
+  function tutorialAfterFlip(t) {
+    if (state.level !== 1 || tutorialDone || tutorialStep !== 1) return;
+    const gen = state.gen;
+    tutorialStep = 2;
+    hideCoachTip();
+    clearCoachMarks();
+    tutorialTarget = t;
+    showCoachTip('② 浮光：同层相邻的牌短暂亮出');
+    const twin = state.tiles.find(u => u !== t && u.state !== 'matched' && u.face === t.face && isFree(u));
+    if (!twin || !twin.el) {
+      tutorialTimer = setTimeout(() => {
+        tutorialTimer = null;
+        if (gen !== state.gen || state.over || tutorialDone) return;
+        tutorialDone = true;
+        clearTutorial();
+      }, 1800);
+      return;
+    }
+    tutorialTimer = setTimeout(() => {
+      tutorialTimer = null;
+      if (gen !== state.gen || state.over || tutorialDone || tutorialStep !== 2) return;
+      if (!twin.el || twin.state === 'matched') {
+        tutorialDone = true;
+        clearTutorial();
+        return;
+      }
+      tutorialStep = 3;
+      tutorialTarget = twin;
+      twin.el.classList.add('coach', 'coach-reveal');
+      showCoachTip('③ 点同面的牌配对');
+    }, 1050);
+  }
+
+  function tutorialAfterMatch() {
+    if (state.level !== 1 || tutorialDone || (tutorialStep !== 2 && tutorialStep !== 3)) return;
+    const gen = state.gen;
+    const memStat = pipsEl.parentElement;
+    hideCoachTip();
+    clearCoachMarks();
+    tutorialStep = 4;
+    tutorialTarget = { el: memStat, hud: true };
+    memStat.classList.add('coach-stat');
+    showCoachTip('④ 明牌：翻开的牌保持朝上，满位后最早的盖回');
+    tutorialTimer = setTimeout(() => {
+      tutorialTimer = null;
+      if (gen !== state.gen || state.over || tutorialDone) return;
+      memStat.classList.remove('coach-stat');
+      tutorialStep = 5;
+      tutorialTarget = { el: stepsStat, hud: true };
+      stepsStat.classList.add('coach-stat');
+      showCoachTip('⑤ 步数：每翻一张 −1，用完即失败');
+      tutorialTimer = setTimeout(() => {
+        tutorialTimer = null;
+        if (gen !== state.gen || state.over || tutorialDone) return;
+        finishTutorial();
+      }, 2600);
+    }, 2400);
+  }
+
+  function startTutorial() {
+    if (state.level !== 1 || tutorialDone) return;
+    if (tutorialStep === 1 || tutorialStep === 2) {
+      positionCoachTip();
+      return;
+    }
+    if (state.flips > 0) {
+      tutorialDone = true;
+      clearTutorial();
+      return;
+    }
+    const first = state.tiles.find(t => t.face === 'cat' && isFree(t)) || state.tiles.find(t => isFree(t));
+    if (!first || !first.el) return;
+    tutorialStep = 1;
+    tutorialTarget = first;
+    first.el.classList.add('coach');
+    showCoachTip('① 点这张牌翻开');
+  }
+
+  function finishTutorial() {
+    if (state.level !== 1 || tutorialDone) return;
+    tutorialDone = true;
+    clearTutorial();
+  }
+
+  function statHTML(icon, value, label, id) {
+    return '<div class="res-stat"><svg class="i"><use href="#i-' + icon + '"/></svg><b' +
+      (id ? ' id="' + id + '"' : '') + '>' + value + '</b><span>' + label + '</span></div>';
+  }
+
+  function setResultActions(actions) {
+    resultActions.innerHTML = '';
+    for (const a of actions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cta ' + a.cls;
+      btn.innerHTML = '<span class="cta-icon"><svg class="i"><use href="#i-' + a.icon + '"/></svg></span>' +
+        '<span class="cta-label">' + a.label + '</span>';
+      btn.addEventListener('click', a.fn);
+      resultActions.appendChild(btn);
+    }
+  }
+
+  function timeSpent() {
+    return Math.max(1, Math.round((performance.now() - (state.startedAt || performance.now())) / 1000));
+  }
+
+  function fmtTime(secs) {
+    return secs >= 60 ? Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0') : secs + 's';
+  }
+
+  function beatPercent(secs, level) {
+    const pairs = state.tiles.length / 2;
+    const spare = Math.max(1, (state.stepsAtStart || state.steps) - pairs);
+    const waste = Math.max(0, state.flips - pairs);
+    const eff = 1 - Math.min(1, waste / spare);
+    const target = pairs * 2.2 + 8;
+    const speed = Math.min(1, target / Math.max(target, secs));
+    const combo = Math.min(1, state.maxCombo / Math.max(4, pairs * 0.5));
+    const depth = Math.min(1, (level - 1) / (LEVEL_COUNT - 1));
+    const scoreTerm = Math.min(1, state.score / (pairs * 280 + 300));
+    const raw = 40 + depth * 18 + eff * 26 + speed * 10 + combo * 10 + scoreTerm * 8;
+    return Math.round(Math.max(41, Math.min(99, raw)));
+  }
+
+  function rankHTML(pct) {
+    return '击败了 <b>' + pct + '%</b> 的玩家';
+  }
+
+  function claimGift(completed) {
+    if (completed < GIFT_LEVEL || giftSlots > 0) return false;
+    giftSlots = 1;
+    return true;
+  }
+
+  function updateResultGoal(completed, opts = {}) {
+    const all = state.allClear;
+    const firstDone = completed >= GIFT_LEVEL || all;
+    const preGift = !!opts.preGift;
+    let filled = 0;
+    let text = '';
+    if (!firstDone || preGift) {
+      filled = Math.max(1, Math.min(10, completed));
+      text = preGift ? '第 10 关礼物 · 明牌位 +1' : '达到第 10 关 · 明牌位 +1';
+    } else if (!all) {
+      filled = Math.max(0, Math.min(10, completed - GIFT_LEVEL));
+      text = '再通 ' + Math.max(1, 20 - completed) + ' 关 · 全通徽章';
+    } else {
+      filled = 10;
+      text = '20 关全通 · 全通徽章已领取';
+    }
+    goalSegs.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+      const d = document.createElement('span');
+      d.className = 'goal-seg' + (i < filled ? ' on' : '');
+      goalSegs.appendChild(d);
+    }
+    goalText.textContent = text;
+  }
+
+  function fillGiftPips(count) {
+    giftPips.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('span');
+      d.className = 'gift-pip' + (i === count - 1 ? ' new' : ' on');
+      giftPips.appendChild(d);
+    }
+  }
+
+  function openGiftPopup(gift, onClose) {
+    giftKicker.textContent = gift.kicker;
+    giftTitle.textContent = gift.title;
+    giftDesc.textContent = gift.desc;
+    giftClaim.querySelector('.cta-label').textContent = gift.cta || '收下礼物';
+    fillGiftPips(gift.pips);
+    giftCloseCb = onClose || null;
+    giftModal.setAttribute('aria-hidden', 'false');
+    giftModal.classList.remove('show');
+    void giftModal.offsetWidth;
+    giftModal.classList.add('show');
+  }
+
+  function closeGiftPopup() {
+    if (!giftModal.classList.contains('show')) return;
+    giftModal.classList.remove('show');
+    giftModal.setAttribute('aria-hidden', 'true');
+    const cb = giftCloseCb;
+    giftCloseCb = null;
+    setTimeout(() => {
+      if (cb && !giftModal.classList.contains('show')) cb();
+    }, 260);
+  }
+
+  function hideGiftPopup() {
+    if (giftOpenTimer) {
+      clearTimeout(giftOpenTimer);
+      giftOpenTimer = null;
+    }
+    giftModal.classList.remove('show');
+    giftModal.setAttribute('aria-hidden', 'true');
+    giftCloseCb = null;
+  }
+
+  function animateWinScore(base, final, bonus, rankPct, token) {
+    const scoreNode = $('resScore');
+    const plusNode = $('bonusPlus');
+    if (!scoreNode) return;
+    const start = performance.now();
+    const dur = 900;
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    let lastRank = -1;
+    const step = (now) => {
+      if (token !== scoreAnimToken) return;
+      const k = Math.min(1, (now - start) / dur);
+      const e = ease(k);
+      scoreNode.textContent = String(Math.round(base + (final - base) * e));
+      if (plusNode) plusNode.textContent = '+' + Math.round(bonus * e);
+      const pct = Math.round(rankPct * e);
+      if (pct !== lastRank) {
+        resultRank.innerHTML = rankHTML(pct);
+        lastRank = pct;
+      }
+      if (k < 1) {
+        requestAnimationFrame(step);
+      } else {
+        scoreNode.textContent = String(final);
+        if (plusNode) plusNode.textContent = '+' + bonus;
+        resultRank.innerHTML = rankHTML(rankPct);
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function win() {
+    if (state.over) return;
+    state.over = true;
+    finishTutorial();
+    const completed = state.level;
+    const cleared = completed >= LEVEL_COUNT;
+    state.allClear = cleared;
+    if (!cleared) state.level += 1;
+    const firstGift = claimGift(completed);
+    updateBoosters();
+    updateResultGoal(completed, { preGift: firstGift });
+
+    const baseScore = state.score;
+    const stepBonus = Math.max(0, state.steps) * 20;
+    state.score += stepBonus;
+    const secs = timeSpent();
+    const rankPct = beatPercent(secs, completed);
+    stopBgm();
+    startResultMusic();
+    vibrate([20, 40, 30]);
+    resultTitle.textContent = cleared ? '浮光尽览' : '才华横溢';
+    resultSub.textContent = cleared ? '20 关全部完成 · 浮光已收' : '';
+    resultRank.innerHTML = rankHTML(0);
+    resultRank.classList.add('show');
+    resultStats.innerHTML =
+      statHTML('clock', fmtTime(secs), '用时') +
+      statHTML('coin', baseScore, '分数', 'resScore') +
+      statHTML('flame', state.maxCombo, '连击');
+    resultBonus.innerHTML = '步数结余 <b>' + Math.max(0, state.steps) + '</b> 步 × 20 = ' +
+      '<b class="bonus-plus" id="bonusPlus">+0</b>';
+    resultBonus.classList.remove('show');
+    setResultActions([
+      cleared
+        ? { icon: 'play', label: '再走一遍', cls: 'primary', fn: () => { state.level = 1; state.allClear = false; restart(); } }
+        : { icon: 'play', label: '关卡 ' + state.level, cls: 'primary', fn: restart }
+    ]);
+    showScreen('result');
+
+    const token = ++scoreAnimToken;
+    setTimeout(() => {
+      if (token !== scoreAnimToken) return;
+      resultBonus.classList.add('show');
+    }, 260);
+    setTimeout(() => {
+      if (token !== scoreAnimToken) return;
+      animateWinScore(baseScore, state.score, stepBonus, rankPct, token);
+    }, 420);
+    if (firstGift) {
+      const baseW = getLevel(completed).w || 4;
+      giftOpenTimer = setTimeout(() => {
+        giftOpenTimer = null;
+        if (token !== scoreAnimToken || document.body.dataset.screen !== 'result') return;
+        openGiftPopup({
+          kicker: '第 ' + GIFT_LEVEL + ' 关礼物',
+          title: '明牌位 +1',
+          desc: '后续关卡永久 +1',
+          pips: baseW + giftSlots,
+          cta: '收下礼物'
+        }, () => updateResultGoal(completed));
+      }, 1550);
+    }
+  }
+
+  function fail(reason) {
+    if (state.over) return;
+    state.over = true;
+    finishTutorial();
+    state.dead = reason === 'dead';
+    updateBoosters();
+    const left = state.tiles.filter(t => t.state !== 'matched').length / 2;
+    beep(180, 0.3, 'sine', 0.04, 90);
+    vibrate(20);
+    setHint('');
+    failTitle.textContent = state.dead ? '无牌可翻' : '步数用完了';
+    failDesc.textContent = state.dead ? '剩余 ' + left + ' 对全部被压住' : '还剩 ' + left + ' 对未配对';
+    failReviveLabel.textContent = state.dead ? '重开本关' : '看广告复活';
+    failReviveBadge.style.display = state.dead ? 'none' : '';
+    failHintEl.textContent = state.dead ? '牌面已无解 · 重新挑战' : '广告结束后 · 步数 +5';
+    failModal.classList.remove('hidden');
+  }
+
+  function closeFail() {
+    failModal.classList.add('hidden');
+  }
+
+  function simulateAd() {
+    closeFail();
+    if (state.dead) {
+      restart();
+      return;
+    }
+    closeMenu();
+    adModal.classList.remove('hidden');
+    const gen = state.gen;
+    let n = 3;
+    adText.textContent = String(n);
+    const tick = () => {
+      if (gen !== state.gen) return;
+      n -= 1;
+      if (n > 0) {
+        adText.textContent = String(n);
+        setTimeout(tick, 1000);
+      } else {
+        adModal.classList.add('hidden');
+        state.steps += 5;
+        state.over = false;
+        updateHUD();
+        updateBoosters();
+        ensureAudio();
+        startBgm();
+        showScreen('game');
+        setHint('+5 步数 · 继续', 2000);
+      }
+    };
+    setTimeout(tick, 1000);
+  }
+
+  function useHint() {
+    if (state.over || state.hint <= 0) return;
+    let best = null;
+    for (let i = 0; i < state.tiles.length; i++) {
+      for (let j = i + 1; j < state.tiles.length; j++) {
+        const a = state.tiles[i];
+        const b = state.tiles[j];
+        if (a.state === 'matched' || b.state === 'matched' || a.face !== b.face) continue;
+        const score = (isFree(a) ? 2 : 0) + (isFree(b) ? 2 : 0);
+        if (!best || score > best.score) best = { a, b, score };
+      }
+    }
+    if (!best) return;
+    state.hint -= 1;
+    updateBoosters();
+    for (const t of [best.a, best.b]) {
+      t.el.classList.add('hint', 'reveal');
+      setTimeout(() => t.el.classList.remove('hint', 'reveal'), 3000);
+    }
+    beep(880, 0.08, 'sine', 0.04);
+    setHint('提示：这两张同面，点开配对');
+  }
+
+  function useEcho() {
+    if (state.over || state.echo <= 0) return;
+    state.echo -= 1;
+    updateBoosters();
+    const downs = state.tiles.filter(t => t.state === 'down' && isFree(t));
+    for (const t of downs) {
+      clearGhost(t);
+      t.el.style.setProperty('--delay', '0ms');
+      t.el.classList.add('ghost');
+      t.el.style.setProperty('--peek', '3200ms');
+      t.ghostTimer = setTimeout(() => {
+        t.el.classList.remove('ghost');
+        t.ghostTimer = null;
+      }, 3200);
+    }
+    beep(740, 0.1, 'sine', 0.04);
+    setTimeout(() => beep(990, 0.12, 'sine', 0.035), 90);
+    setHint('透视：自由牌暂时全部可见');
+  }
+
+  function useAddSlot() {
+    if (state.over || state.slotPlus <= 0) return;
+    state.slotPlus -= 1;
+    state.w += 1;
+    updateBoosters();
+    updateHUD();
+    beep(520, 0.08, 'triangle', 0.04);
+    setTimeout(() => beep(780, 0.1, 'triangle', 0.04), 80);
+    vibrate(10);
+    setHint('明牌位 +1 · 本局有效');
+  }
+
+  function showRules() {
+    overlay.classList.remove('hidden');
+  }
+
+  function openMenu(showRestart) {
+    syncMenuSwitches();
+    menuRestartEl.classList.toggle('hidden', !showRestart);
+    menuSheet.classList.remove('hidden');
+  }
+
+  function closeMenu() {
+    menuSheet.classList.add('hidden');
+  }
+
+  function measureBoard(tiles) {
+    let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
+    for (const t of tiles) {
+      const left = t.x * PITCH_X - t.z * Z_SHIFT;
+      const top = t.y * PITCH_Y - t.z * Z_SHIFT;
+      minL = Math.min(minL, left);
+      minT = Math.min(minT, top);
+      maxR = Math.max(maxR, left + TW);
+      maxB = Math.max(maxB, top + TH);
+    }
+    const contentW = maxR - minL, contentH = maxB - minT;
+    const padX = Math.max(OFF_X, (420 - contentW) / 2);
+    const padY = Math.max(OFF_Y, (420 - contentH) / 2);
+    return {
+      minL, minT, padX, padY,
+      w: Math.ceil(contentW + padX * 2),
+      h: Math.ceil(contentH + padY * 2)
+    };
+  }
+
+  function init() {
+    state.gen += 1;
+    scoreAnimToken += 1;
+    if (comboTimer) { clearTimeout(comboTimer); comboTimer = null; }
+    if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+    const lv = getLevel(state.level);
+    state.level = lv.level;
+    state.levelName = lv.name || '';
+    state.w = (lv.w || 4) + giftSlots;
+    state.steps = lv.steps || 12;
+    state.stepsAtStart = state.steps;
+    state.peekMs = lv.peekMs || 600;
+    state.score = 0;
+    state.combo = 0;
+    state.maxCombo = 0;
+    state.matched = 0;
+    state.flips = 0;
+    state.evictions = 0;
+    state.lastMatch = 0;
+    state.running = false;
+    state.resolving = false;
+    state.evicting = false;
+    state.over = false;
+    state.dead = false;
+    state.started = false;
+    state.allClear = false;
+    state.hint = 1;
+    state.echo = 1;
+    state.slotPlus = 1;
+    state.startedAt = 0;
+    state.pending.clear();
+    fxParts = [];
+    if (fxRaf) { cancelAnimationFrame(fxRaf); fxRaf = 0; }
+    fxCtx.clearRect(0, 0, state.boardW, state.boardH);
+    state.tiles = lv.layout.map(t => ({
+      ...t,
+      state: 'down',
+      discoveredAt: 0,
+      el: null,
+      ghostTimer: null
+    }));
+    const metrics = measureBoard(state.tiles);
+    state.minL = metrics.minL;
+    state.minT = metrics.minT;
+    state.padX = metrics.padX;
+    state.padY = metrics.padY;
+    state.boardW = metrics.w;
+    state.boardH = metrics.h;
+    boardWrap.style.width = state.boardW + 'px';
+    boardWrap.style.height = state.boardH + 'px';
+    sizeFx();
+    buildBoard();
+    render();
+    updateBoosters();
+    hintLine.textContent = '';
+    hintLine.classList.remove('show');
+    comboFlash.textContent = '';
+    comboFlash.classList.remove('show');
+    lastComboShown = 0;
+    clearTutorial();
+    tutorialDone = state.level !== 1;
+    overlay.classList.add('hidden');
+    menuSheet.classList.add('hidden');
+    adModal.classList.add('hidden');
+    failModal.classList.add('hidden');
+    resultSub.textContent = '';
+    resultRank.textContent = '';
+    resultRank.classList.remove('show');
+    resultBonus.classList.remove('show');
+    resultBonus.innerHTML = '';
+  }
+
+  function restart() {
+    init();
+    state.started = true;
+    stopResultMusic();
+    ensureAudio();
+    startBgm();
+    showScreen('game');
+  }
+
+  function resize() {
+    if (!gameScreen.classList.contains('is-active')) return;
+    const vw = boardViewport.clientWidth;
+    const top = boardViewport.getBoundingClientRect().top;
+    const avail = Math.max(250, window.innerHeight - top - 140);
+    const fit = Math.min(1, (vw - 4) / state.boardW, avail / state.boardH);
+    const s = Math.max(0.4, fit) * (state.boardW > 520 ? 0.92 : 0.85);
+    state.boardScale = s;
+    boardWrap.style.transformOrigin = 'top left';
+    boardWrap.style.transform = 'scale(' + s + ')';
+    boardWrap.style.width = (state.boardW * s) + 'px';
+    boardWrap.style.height = (state.boardH * s) + 'px';
+  }
+
+  // ---------- events ----------
+  startBtn.addEventListener('click', beginGame);
+  // TODO(demo): temporary level picker, remove for release
+  function openLevelPicker() {
+    if (!lpGrid.childElementCount) {
+      LEVELS.forEach((lv, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lp-level';
+        b.innerHTML = '<b>' + (i + 1) + '</b><span>' + lv.tiles + ' 牌</span>';
+        b.addEventListener('click', () => {
+          closeLevelPicker();
+          state.level = i + 1;
+          state.allClear = false;
+          state.started = false;
+          state.over = false;
+          if (i + 1 > GIFT_LEVEL) giftSlots = 1; // 测试：11 关起带上第 10 关礼物
+          beginGame();
+        });
+        lpGrid.appendChild(b);
+      });
+    }
+    [...lpGrid.children].forEach((b, i) => b.classList.toggle('is-current', i + 1 === state.level));
+    levelPicker.hidden = false;
+  }
+  function closeLevelPicker() { levelPicker.hidden = true; }
+  levelPickBtn.addEventListener('click', openLevelPicker);
+  lpClose.addEventListener('click', closeLevelPicker);
+  levelPicker.addEventListener('click', e => { if (e.target === levelPicker) closeLevelPicker(); });
+  homeBtn.addEventListener('click', backHome);
+  resultHomeBtn.addEventListener('click', backHome);
+  sheetClose.addEventListener('click', () => overlay.classList.add('hidden'));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+  $('menuBtn').addEventListener('click', () => openMenu(true));
+  $('homeMenuBtn').addEventListener('click', () => openMenu(false));
+  $('resultMenuBtn').addEventListener('click', () => openMenu(false));
+  $('menuClose').addEventListener('click', closeMenu);
+  menuSheet.addEventListener('click', (e) => {
+    if (e.target === menuSheet) closeMenu();
+  });
+  $('menuRules').addEventListener('click', () => {
+    closeMenu();
+    showRules();
+  });
+  $('menuRestart').addEventListener('click', () => {
+    closeMenu();
+    restart();
+  });
+  $('bgmSwitch').addEventListener('click', () => {
+    state.bgm = !state.bgm;
+    if (state.bgm) {
+      ensureAudio();
+      if (document.body.dataset.screen === 'result') startResultMusic();
+      else startScreenBgm();
+    } else {
+      stopBgm();
+      stopHomeBgm();
+      stopResultMusic();
+    }
+    syncMenuSwitches();
+  });
+  $('sfxSwitch').addEventListener('click', () => {
+    state.sfx = !state.sfx;
+    syncMenuSwitches();
+    if (state.sfx) beep(660, 0.08, 'sine', 0.04);
+  });
+  $('vibSwitch').addEventListener('click', () => {
+    state.haptics = !state.haptics;
+    syncMenuSwitches();
+    vibrate(14);
+  });
+  hintBtn.addEventListener('click', useHint);
+  echoBtn.addEventListener('click', useEcho);
+  slotBoostBtn.addEventListener('click', useAddSlot);
+  giftClaim.addEventListener('click', closeGiftPopup);
+  $('failRevive').addEventListener('click', simulateAd);
+  $('failRestart').addEventListener('click', () => {
+    closeFail();
+    restart();
+  });
+  window.addEventListener('resize', resize);
+  window.addEventListener('resize', positionCoachTip);
+  const unlockHomeMusic = () => {
+    if (document.body.dataset.screen === 'home') startHomeBgm();
+  };
+  document.addEventListener('pointerdown', unlockHomeMusic, { passive: true });
+  document.addEventListener('keydown', unlockHomeMusic);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && document.body.dataset.screen === 'home') startHomeBgm();
+  });
+
+  // ---------- debug / test hooks ----------
+  window.__demo = {
+    state,
+    tiles: () => state.tiles,
+    isFree: (id) => {
+      const t = state.tiles.find(x => x.id === id);
+      return t ? isFree(t) : false;
+    },
+    flip: (id) => {
+      const t = state.tiles.find(x => x.id === id);
+      if (t) onTileClick(t);
+    },
+    restart,
+    start: beginGame,
+    home: backHome,
+    gotoLevel: (n) => {
+      state.level = Math.max(1, Math.min(LEVEL_COUNT, Number(n) || 1));
+      state.started = true;
+      state.over = false;
+      init();
+      showScreen('game');
+    },
+    levelInfo: () => ({
+      level: state.level,
+      name: state.levelName,
+      tiles: state.tiles.length,
+      steps: state.steps,
+      w: state.w,
+      boardW: state.boardW,
+      boardH: state.boardH
+    }),
+    setSteps: (v) => { state.steps = v; updateHUD(); },
+    useHint,
+    useEcho,
+    useAddSlot,
+    resultMusic: () => ({
+      paused: resultEl.paused,
+      t: +resultEl.currentTime.toFixed(2),
+      dur: +(resultEl.duration || 0).toFixed(2)
+    }),
+    spawnDebris,
+    audioState: () => {
+      const info = (s) => {
+        if (!s.buf) return null;
+        const d = s.buf.getChannelData(0);
+        let peak = 0;
+        for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+        return { dur: +s.buf.duration.toFixed(2), peak: +peak.toFixed(2) };
+      };
+      return {
+        stone: info(samples.stone),
+        flip: info(samples.flip),
+        bgm: { paused: bgmEl.paused, t: +bgmEl.currentTime.toFixed(1), dur: isFinite(bgmEl.duration) ? +bgmEl.duration.toFixed(1) : null, vol: bgmEl.volume },
+        homeBgm: { paused: homeBgmEl.paused, t: +homeBgmEl.currentTime.toFixed(1), dur: isFinite(homeBgmEl.duration) ? +homeBgmEl.duration.toFixed(1) : null, vol: homeBgmEl.volume },
+        ctx: audioCtx ? audioCtx.state : null
+      };
+    },
+    validatePairs: () => {
+      const byFace = {};
+      for (const t of state.tiles) (byFace[t.face] ||= []).push(t);
+      const adjacent = [];
+      for (const [face, list] of Object.entries(byFace)) {
+        if (list.length !== 2) {
+          adjacent.push({ face, error: 'pair-count-' + list.length });
+          continue;
+        }
+        const [a, b] = list;
+        if (a.z === b.z && Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1) {
+          adjacent.push({ face, ids: [a.id, b.id] });
+        }
+      }
+      return { pairs: Object.keys(byFace).length, adjacent };
+    },
+    clearLevel: (steps = 5) => {
+      for (const t of state.tiles) t.state = 'matched';
+      state.matched = state.tiles.length;
+      state.steps = Math.max(0, Number(steps) || 0);
+      win();
+    },
+    autoSolve: async () => {
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      for (let guard = 0; guard < 80; guard++) {
+        if (state.over) break;
+        let pair = null;
+        for (const a of state.tiles) {
+          for (const b of state.tiles) {
+            if (a.id >= b.id) continue;
+            if (a.state === 'matched' || b.state === 'matched' || a.face !== b.face) continue;
+            if (isFree(a) && isFree(b)) { pair = [a, b]; break; }
+          }
+          if (pair) break;
+        }
+        if (!pair) break;
+        if (pair[0].state === 'down') { onTileClick(pair[0]); await sleep(120); }
+        if (pair[1].state === 'down') { onTileClick(pair[1]); await sleep(120); }
+        await sleep(700);
+      }
+    }
+  };
+
+  // ---------- boot ----------
+  loadSamples();
+  primeAudio();
+  sizeFx();
+  init();
+  syncMenuSwitches();
+  showScreen('home');
+})();
+</script>
+</body>
+</html>
